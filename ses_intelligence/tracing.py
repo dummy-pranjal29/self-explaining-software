@@ -1,5 +1,6 @@
 import time
 import inspect
+from ses_intelligence.runtime_state import get_behavior_graph
 
 def trace_behavior(func):
     def wrapper(*args, **kwargs):
@@ -8,13 +9,16 @@ def trace_behavior(func):
         duration = time.time() - start
 
         caller = inspect.stack()[1].function
+        callee = func.__name__
 
-        print(
-            f"[SES-FUNC] "
-            f"func={func.__name__} "
-            f"called_by={caller} "
-            f"duration={duration:.4f}s"
+        graph = get_behavior_graph()
+        graph.add_call(
+            caller=caller,
+            callee=callee,
+            duration=duration
         )
+
+        print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
 
         return result
     return wrapper
