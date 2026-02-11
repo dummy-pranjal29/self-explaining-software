@@ -1,5 +1,6 @@
 import networkx as nx
 
+
 class BehaviorGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
@@ -33,3 +34,23 @@ class BehaviorGraph:
                 "avg_duration": round(avg_time, 4)
             })
         return summary
+
+
+# ------------------------------------------------------------
+# SINGLETON ACCESSOR (RELOAD SAFE)
+# ------------------------------------------------------------
+
+_behavior_graph_instance = None
+
+
+def get_behavior_graph():
+    """
+    Lazy singleton initializer.
+    Ensures a single shared graph instance.
+    """
+    global _behavior_graph_instance
+
+    if _behavior_graph_instance is None:
+        _behavior_graph_instance = BehaviorGraph()
+
+    return _behavior_graph_instance

@@ -1,5 +1,22 @@
+# Virtual Environment
 venv/
+env/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Database
 db.sqlite3
-.env
+
+# Snapshot storage
+snapshots/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
