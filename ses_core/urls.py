@@ -6,6 +6,7 @@ from demo_app.views import (
     graph_debug,
     behavior_diff_debug,
     behavior_history_debug,
+    anomaly_debug,
 )
 
 urlpatterns = [
@@ -18,4 +19,5 @@ urlpatterns = [
     path("debug/graph/", graph_debug),
     path("debug/behavior-diff/", behavior_diff_debug),
     path("debug/behavior-history/", behavior_history_debug),
+    path("debug/anomalies/", anomaly_debug),
 ]

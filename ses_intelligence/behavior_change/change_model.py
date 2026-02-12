@@ -15,3 +15,12 @@ class BehaviorChange:
     dst: Optional[str] = None
     metric_before: Optional[float] = None
     metric_after: Optional[float] = None
+
+    def to_dict(self):
+        return {
+            "type": self.type,
+            "src": self.src,
+            "dst": self.dst,
+            "metric_before": self.metric_before,
+            "metric_after": self.metric_after,
+        }
