@@ -68,5 +68,110 @@
         }
       ]
     }
+  },
+  {
+    "timestamp": "2026-02-13T10:56:31.843387+00:00",
+    "health": {
+      "architecture_health_score": 85.22,
+      "edge_count": 2,
+      "edges": [
+        {
+          "edge": [
+            "signup",
+            "save_user"
+          ],
+          "stability_index": 0.8045574093986829,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.6206472755581425,
+            "drift_stability": 0.9969779525457366,
+            "anomaly_pressure": 1.0
+          }
+        },
+        {
+          "edge": [
+            "signup",
+            "send_welcome_email"
+          ],
+          "stability_index": 0.8999316801824977,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.9997308556630565,
+            "drift_stability": 0.999994831333668,
+            "anomaly_pressure": 1.0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-13T10:56:42.779056+00:00",
+    "health": {
+      "architecture_health_score": 85.22,
+      "edge_count": 2,
+      "edges": [
+        {
+          "edge": [
+            "signup",
+            "save_user"
+          ],
+          "stability_index": 0.8045574093986829,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.6206472755581425,
+            "drift_stability": 0.9969779525457366,
+            "anomaly_pressure": 1.0
+          }
+        },
+        {
+          "edge": [
+            "signup",
+            "send_welcome_email"
+          ],
+          "stability_index": 0.8999316801824977,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.9997308556630565,
+            "drift_stability": 0.999994831333668,
+            "anomaly_pressure": 1.0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-13T11:00:38.449903+00:00",
+    "health": {
+      "architecture_health_score": 85.22,
+      "edge_count": 2,
+      "edges": [
+        {
+          "edge": [
+            "signup",
+            "save_user"
+          ],
+          "stability_index": 0.8045574093986829,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.6206472755581425,
+            "drift_stability": 0.9969779525457366,
+            "anomaly_pressure": 1.0
+          }
+        },
+        {
+          "edge": [
+            "signup",
+            "send_welcome_email"
+          ],
+          "stability_index": 0.8999316801824977,
+          "components": {
+            "structural_consistency": 0.6666666666666666,
+            "temporal_stability": 0.9997308556630565,
+            "drift_stability": 0.999994831333668,
+            "anomaly_pressure": 1.0
+          }
+        }
+      ]
+    }
   }
 ]

@@ -142,6 +142,7 @@ def anomaly_debug(request):
     - Anomaly detection
     - Edge stability computation
     - Architecture health scoring
+    - Edge risk forecasting
     """
 
     pipeline = IntelligencePipeline(contamination=0.15)
@@ -149,3 +150,4 @@ def anomaly_debug(request):
     result = pipeline.run_intelligence()
 
     return JsonResponse(result, safe=False)
+

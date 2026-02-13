@@ -9,7 +9,8 @@ from ses_intelligence.behavior_change.history import SnapshotStore
 from ses_intelligence.architecture_health.engine import ArchitectureHealthEngine
 from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
 from ses_intelligence.architecture_health.trend import ArchitectureHealthTrend
-
+from ses_intelligence.architecture_health.forecasting import RiskForecaster
+from ses_intelligence.architecture_health.risk_labels import RiskLabelGenerator
 
 
 class IntelligencePipeline:
@@ -22,6 +23,7 @@ class IntelligencePipeline:
     - IsolationForest anomaly detection
     - Edge Stability computation
     - Architecture Health scoring
+    - Edge-level risk forecasting
     """
 
     def __init__(self, contamination=0.4):
@@ -32,10 +34,6 @@ class IntelligencePipeline:
     # --------------------------------------------------
 
     def _reconstruct_snapshots(self, raw_snapshots):
-        """
-        Convert raw JSON snapshot dicts into lightweight
-        objects compatible with FeatureExtractor and Health Engine.
-        """
 
         reconstructed = []
 
@@ -43,13 +41,12 @@ class IntelligencePipeline:
 
             class ReconstructedSnapshot:
                 def __init__(self, data):
-                    # Convert "A|B" back into (A, B)
+
                     self.edge_signature = {
                         tuple(edge.split("|")): meta
                         for edge, meta in data["edge_signature"].items()
                     }
 
-                    # Rebuild minimal DiGraph for centrality
                     self.graph = nx.DiGraph()
 
                     for (u, v), meta in self.edge_signature.items():
@@ -69,12 +66,13 @@ class IntelligencePipeline:
     # --------------------------------------------------
 
     def run_intelligence(self):
+
         raw_snapshots = SnapshotStore.load_all()
 
-        if not raw_snapshots or len(raw_snapshots) < 2:
+        if not raw_snapshots or len(raw_snapshots) < 3:
             return {
                 "status": "insufficient_data",
-                "message": "Need at least 2 snapshots",
+                "message": "Need at least 3 snapshots for intelligence",
             }
 
         snapshots = self._reconstruct_snapshots(raw_snapshots)
@@ -149,9 +147,14 @@ class IntelligencePipeline:
         trend_engine = ArchitectureHealthTrend(history_data)
         trend_output = trend_engine.compute()
 
+        # ---------------------------------
+        # RISK FORECASTING (NEW)
+        # ---------------------------------
+
+        risk_output = self._compute_edge_risk(raw_snapshots, edge_features)
 
         # ---------------------------------
-        # FINAL STRUCTURED OUTPUT
+        # FINAL OUTPUT
         # ---------------------------------
 
         return {
@@ -163,5 +166,48 @@ class IntelligencePipeline:
             "anomalies": anomaly_results,
             "architecture_health": health_output,
             "health_trend": trend_output,
+            "edge_risk_forecast": risk_output,
         }
 
+    # --------------------------------------------------
+    # EDGE RISK FORECASTING
+    # --------------------------------------------------
+
+    def _compute_edge_risk(self, raw_snapshots, edge_features):
+
+        if len(raw_snapshots) < 5:
+            return {
+                "status": "insufficient_snapshot_history"
+            }
+
+        label_generator = RiskLabelGenerator(raw_snapshots)
+        dataset = label_generator.generate()
+
+        features = dataset["features"]
+        labels = dataset["labels"]
+
+        forecaster = RiskForecaster()
+        training_result = forecaster.train(features, labels)
+
+        if training_result.get("status") != "trained":
+            return training_result
+
+        prediction_result = forecaster.predict(features)
+
+        probabilities = prediction_result["probabilities"]
+
+        risk_classification = [
+            {
+                "instability_probability": round(prob, 4),
+                "risk_tier": forecaster.classify_risk(prob),
+            }
+            for prob in probabilities
+        ]
+
+        insights = forecaster.get_model_insights()
+
+        return {
+            "training": training_result,
+            "predictions": risk_classification,
+            "model_insights": insights,
+        }
