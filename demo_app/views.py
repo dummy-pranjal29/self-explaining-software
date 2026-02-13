@@ -133,10 +133,19 @@ def behavior_history_debug(request):
 
 
 # ------------------------------------------------------------
-# ANOMALY DETECTION ENDPOINT
+# RUNTIME INTELLIGENCE ENDPOINT
 # ------------------------------------------------------------
 
 def anomaly_debug(request):
+    """
+    Executes full runtime intelligence:
+    - Anomaly detection
+    - Edge stability computation
+    - Architecture health scoring
+    """
+
     pipeline = IntelligencePipeline(contamination=0.15)
-    result = pipeline.run_anomaly_detection()
+
+    result = pipeline.run_intelligence()
+
     return JsonResponse(result, safe=False)

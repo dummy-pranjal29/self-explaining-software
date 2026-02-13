@@ -1,0 +1,72 @@
+[
+  {
+    "timestamp": "2026-02-13T09:33:21.447922+00:00",
+    "health": {
+      "architecture_health_score": 66.71,
+      "edge_count": 2,
+      "edges": [
+        {
+          "edge": [
+            "signup",
+            "save_user"
+          ],
+          "stability_index": 0.4421052631578947,
+          "components": {
+            "structural_consistency": 0.6403508771929824,
+            "temporal_stability": 0.0,
+            "drift_stability": 0.0,
+            "anomaly_pressure": 1.0
+          }
+        },
+        {
+          "edge": [
+            "signup",
+            "send_welcome_email"
+          ],
+          "stability_index": 0.8921052631578947,
+          "components": {
+            "structural_consistency": 0.6403508771929824,
+            "temporal_stability": 1.0,
+            "drift_stability": 1.0,
+            "anomaly_pressure": 1.0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-02-13T09:40:56.783719+00:00",
+    "health": {
+      "architecture_health_score": 84.75,
+      "edge_count": 2,
+      "edges": [
+        {
+          "edge": [
+            "signup",
+            "save_user"
+          ],
+          "stability_index": 0.7993908653892108,
+          "components": {
+            "structural_consistency": 0.652542372881356,
+            "temporal_stability": 0.6158923880636297,
+            "drift_stability": 0.9982752825444831,
+            "anomaly_pressure": 1.0
+          }
+        },
+        {
+          "edge": [
+            "signup",
+            "send_welcome_email"
+          ],
+          "stability_index": 0.8956949739709303,
+          "components": {
+            "structural_consistency": 0.652542372881356,
+            "temporal_stability": 0.9997327992042039,
+            "drift_stability": 0.9999953115273631,
+            "anomaly_pressure": 1.0
+          }
+        }
+      ]
+    }
+  }
+]
