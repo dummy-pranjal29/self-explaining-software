@@ -14,17 +14,6 @@ from ses_intelligence.architecture_health.risk_labels import RiskLabelGenerator
 
 
 class IntelligencePipeline:
-    """
-    Full Runtime Intelligence Pipeline
-
-    Executes:
-    - Snapshot reconstruction
-    - Feature extraction
-    - IsolationForest anomaly detection
-    - Edge Stability computation
-    - Architecture Health scoring
-    - Edge-level risk forecasting
-    """
 
     def __init__(self, contamination=0.4):
         self.contamination = contamination
@@ -148,10 +137,10 @@ class IntelligencePipeline:
         trend_output = trend_engine.compute()
 
         # ---------------------------------
-        # RISK FORECASTING (NEW)
+        # RISK FORECASTING (FIXED)
         # ---------------------------------
 
-        risk_output = self._compute_edge_risk(raw_snapshots, edge_features)
+        risk_output = self._compute_edge_risk(raw_snapshots)
 
         # ---------------------------------
         # FINAL OUTPUT
@@ -170,15 +159,19 @@ class IntelligencePipeline:
         }
 
     # --------------------------------------------------
-    # EDGE RISK FORECASTING
+    # EDGE RISK FORECASTING (PROPER FORECAST)
     # --------------------------------------------------
 
-    def _compute_edge_risk(self, raw_snapshots, edge_features):
+    def _compute_edge_risk(self, raw_snapshots):
 
         if len(raw_snapshots) < 5:
             return {
                 "status": "insufficient_snapshot_history"
             }
+
+        # ---------------------------------
+        # TRAIN ON HISTORICAL TRANSITIONS
+        # ---------------------------------
 
         label_generator = RiskLabelGenerator(raw_snapshots)
         dataset = label_generator.generate()
@@ -192,22 +185,46 @@ class IntelligencePipeline:
         if training_result.get("status") != "trained":
             return training_result
 
-        prediction_result = forecaster.predict(features)
+        # ---------------------------------
+        # BUILD FEATURE MATRIX FOR LATEST SNAPSHOT ONLY
+        # ---------------------------------
 
-        probabilities = prediction_result["probabilities"]
+        latest_snapshot = raw_snapshots[-1]
+        latest_edges = latest_snapshot.get("edge_signature", {})
 
-        risk_classification = [
-            {
+        latest_feature_vectors = []
+        edge_keys = []
+
+        for edge_key, edge_data in latest_edges.items():
+
+            latest_feature_vectors.append([
+                edge_data.get("call_count", 0),
+                edge_data.get("avg_duration", 0),
+            ])
+
+            edge_keys.append(edge_key)
+
+        # ---------------------------------
+        # PREDICT ON CURRENT ARCHITECTURE
+        # ---------------------------------
+
+        prediction_result = forecaster.predict(latest_feature_vectors)
+
+        probabilities = prediction_result.get("probabilities", [])
+
+        risk_classification = []
+
+        for i, prob in enumerate(probabilities):
+            risk_classification.append({
+                "edge": edge_keys[i],
                 "instability_probability": round(prob, 4),
                 "risk_tier": forecaster.classify_risk(prob),
-            }
-            for prob in probabilities
-        ]
+            })
 
         insights = forecaster.get_model_insights()
 
         return {
             "training": training_result,
-            "predictions": risk_classification,
+            "current_edge_predictions": risk_classification,
             "model_insights": insights,
         }
