@@ -12,6 +12,8 @@ from ses_intelligence.architecture_health.trend import ArchitectureHealthTrend
 from ses_intelligence.architecture_health.forecasting import RiskForecaster
 from ses_intelligence.architecture_health.risk_labels import RiskLabelGenerator
 from ses_intelligence.architecture_health.escalation import RiskEscalationEngine
+from ses_intelligence.architecture_health.forecasting import ArchitectureHealthForecaster
+
 
 
 
@@ -139,6 +141,14 @@ class IntelligencePipeline:
         trend_output = trend_engine.compute()
 
         # ---------------------------------
+        # HEALTH FORECASTING
+        # ---------------------------------
+
+        forecaster = ArchitectureHealthForecaster()
+        forecast_output = forecaster.forecast(steps_ahead=10)
+
+
+        # ---------------------------------
         # RISK FORECASTING (FIXED)
         # ---------------------------------
 
@@ -181,6 +191,7 @@ class IntelligencePipeline:
             "health_trend": trend_output,
             "edge_risk_forecast": risk_output,
             "risk_escalation": escalation_output,
+            "health_forecast": forecast_output,
 
         }
 

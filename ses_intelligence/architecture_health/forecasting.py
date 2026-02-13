@@ -1,8 +1,15 @@
+import json
+import os
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
+from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
 
+
+# ==========================================================
+# EDGE-LEVEL RISK FORECASTER
+# ==========================================================
 
 MIN_TRAINING_SAMPLES = 10
 MIN_CLASS_VARIETY = 2
@@ -11,20 +18,11 @@ MIN_CLASS_VARIETY = 2
 class RiskForecaster:
     """
     Edge-level future instability predictor.
-
-    Uses Logistic Regression for probabilistic prediction
-    of instability in future snapshots.
-
-    Designed for:
-    - Small datasets
-    - Deterministic fallback
-    - Explainable coefficients
-    - Stable behavior
     """
 
     def __init__(self):
         self.model = LogisticRegression(
-            solver="liblinear",  # better for small datasets
+            solver="liblinear",
             max_iter=200,
             random_state=42
         )
@@ -37,14 +35,6 @@ class RiskForecaster:
     # --------------------------------------------------
 
     def train(self, feature_matrix, labels):
-        """
-        feature_matrix: List[List[float]]
-        labels: List[int]  (0 = stable, 1 = future instability)
-        """
-
-        # -----------------------------------------
-        # Basic validation
-        # -----------------------------------------
 
         if feature_matrix is None or labels is None:
             self.trained = False
@@ -77,17 +67,11 @@ class RiskForecaster:
                 "message": "Training labels contain only one class."
             }
 
-        # -----------------------------------------
-        # Training
-        # -----------------------------------------
-
         try:
             X = np.array(feature_matrix)
             y = np.array(labels)
 
-            # Normalize features
             X_scaled = self.scaler.fit_transform(X)
-
             self.model.fit(X_scaled, y)
 
             self.trained = True
@@ -106,15 +90,11 @@ class RiskForecaster:
                 "message": str(e)
             }
 
-
     # --------------------------------------------------
     # Prediction
     # --------------------------------------------------
 
     def predict(self, feature_matrix):
-        """
-        Returns instability probabilities.
-        """
 
         if not self.trained:
             return {
@@ -143,9 +123,6 @@ class RiskForecaster:
     # --------------------------------------------------
 
     def get_model_insights(self):
-        """
-        Returns model coefficients for explainability.
-        """
 
         if not self.trained:
             return {
@@ -168,9 +145,6 @@ class RiskForecaster:
 
     @staticmethod
     def classify_risk(probability):
-        """
-        Converts probability into risk tier.
-        """
 
         if probability >= 0.75:
             return "critical"
@@ -180,3 +154,74 @@ class RiskForecaster:
             return "moderate"
         else:
             return "low"
+
+
+# ==========================================================
+# ARCHITECTURE HEALTH FORECASTER
+# ==========================================================
+
+class ArchitectureHealthForecaster:
+    """
+    Predicts future architecture health score
+    using linear regression over persisted health history.
+    """
+
+    MIN_POINTS_REQUIRED = 5
+    RISK_THRESHOLD = 70
+
+    def __init__(self):
+        # Load from correct history store
+        self.history = ArchitectureHealthHistory().load()
+
+    # --------------------------------------------------
+
+    def forecast(self, steps_ahead=10):
+
+        if not self.history:
+            return {
+                "status": "insufficient_data",
+                "message": "No health history available"
+            }
+
+        scores = []
+
+        for entry in self.history:
+            try:
+                health_block = entry.get("health", {})
+
+                score = health_block.get("architecture_health_score")
+
+                if score is not None:
+                    scores.append(float(score))
+
+            except (KeyError, TypeError):
+                continue
+
+        if len(scores) < self.MIN_POINTS_REQUIRED:
+            return {
+                "status": "insufficient_data",
+                "message": "Not enough history for forecasting"
+            }
+
+        t = np.arange(len(scores))
+        slope, intercept = np.polyfit(t, scores, 1)
+
+        current_index = len(scores) - 1
+
+        predicted_future = slope * (current_index + steps_ahead) + intercept
+        predicted_future = float(max(0, min(100, predicted_future)))
+
+        snapshots_until_risk = None
+
+        if slope < 0:
+            t_cross = (self.RISK_THRESHOLD - intercept) / slope
+            if t_cross > current_index:
+                snapshots_until_risk = int(t_cross - current_index)
+
+        return {
+            "status": "forecast_generated",
+            "current_health": float(scores[-1]),
+            "slope_per_snapshot": float(slope),
+            "predicted_health_next_window": predicted_future,
+            "snapshots_until_risk": snapshots_until_risk,
+        }
