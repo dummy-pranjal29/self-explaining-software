@@ -16,6 +16,9 @@ from ses_intelligence.behavior_change.history import (
 )
 
 from ses_intelligence.ml.pipeline import IntelligencePipeline
+from ses_intelligence.narrative.engine import generate_narrative
+
+
 
 
 # ------------------------------------------------------------
@@ -150,4 +153,17 @@ def anomaly_debug(request):
     result = pipeline.run_intelligence()
 
     return JsonResponse(result, safe=False)
+
+# ------------------------------------------------------------
+# NARRATIVE INTELLIGENCE ENDPOINT
+# ------------------------------------------------------------
+
+def narrative_debug(request):
+    narrative = generate_narrative()
+
+    return JsonResponse({
+        "status": "narrative_generated",
+        "intelligence": narrative
+    }, safe=False)
+
 
