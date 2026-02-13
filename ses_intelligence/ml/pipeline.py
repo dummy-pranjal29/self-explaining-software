@@ -11,6 +11,8 @@ from ses_intelligence.architecture_health.history import ArchitectureHealthHisto
 from ses_intelligence.architecture_health.trend import ArchitectureHealthTrend
 from ses_intelligence.architecture_health.forecasting import RiskForecaster
 from ses_intelligence.architecture_health.risk_labels import RiskLabelGenerator
+from ses_intelligence.architecture_health.escalation import RiskEscalationEngine
+
 
 
 class IntelligencePipeline:
@@ -143,6 +145,28 @@ class IntelligencePipeline:
         risk_output = self._compute_edge_risk(raw_snapshots)
 
         # ---------------------------------
+        # ESCALATION OVERRIDE
+        # ---------------------------------
+
+        escalation_output = None
+
+        if (
+            isinstance(risk_output, dict)
+            and "current_edge_predictions" in risk_output
+        ):
+
+            escalation_engine = RiskEscalationEngine(
+                base_health=health_output["architecture_health_score"],
+                edge_predictions=risk_output["current_edge_predictions"],
+                health_trend=trend_output,
+            )
+
+            escalation_output = escalation_engine.apply()
+
+            health_output["risk_adjusted_score"] = escalation_output["adjusted_health"]
+
+
+        # ---------------------------------
         # FINAL OUTPUT
         # ---------------------------------
 
@@ -156,6 +180,8 @@ class IntelligencePipeline:
             "architecture_health": health_output,
             "health_trend": trend_output,
             "edge_risk_forecast": risk_output,
+            "risk_escalation": escalation_output,
+
         }
 
     # --------------------------------------------------
@@ -220,6 +246,7 @@ class IntelligencePipeline:
                 "instability_probability": round(prob, 4),
                 "risk_tier": forecaster.classify_risk(prob),
             })
+
 
         insights = forecaster.get_model_insights()
 
