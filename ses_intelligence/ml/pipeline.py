@@ -25,6 +25,10 @@ from ses_intelligence.architecture_health.impact import (
 from ses_intelligence.architecture_health.degradation import (
     EarlyDegradationClassifier
 )
+from ses_intelligence.narrative.refiner import (
+    ExecutiveNarrativeRefiner
+)
+
 
 
 class IntelligencePipeline:
@@ -232,6 +236,26 @@ class IntelligencePipeline:
         else:
             degradation_output = training_result
 
+
+        # ---------------------------------
+        # EXECUTIVE NARRATIVE (PHASE 5)
+        # ---------------------------------
+
+        narrative_refiner = ExecutiveNarrativeRefiner({
+            "architecture_health": health_output,
+            "health_trend": trend_output,
+            "health_forecast": forecast_output,
+            "forecast_confidence": confidence_output,
+            "edge_impact_ranking": impact_output,
+            "anomalies_detected": sum(
+                1 for r in anomaly_results if r["is_anomaly"]
+            ),
+            "early_degradation_prediction": degradation_output,
+        })
+
+        executive_summary = narrative_refiner.generate()
+
+
         # ---------------------------------
         # FINAL OUTPUT
         # ---------------------------------
@@ -251,6 +275,7 @@ class IntelligencePipeline:
             "edge_impact_ranking": impact_output,
             "risk_escalation": escalation_output,
             "early_degradation_prediction": degradation_output,
+            "executive_summary": executive_summary,
         }
 
     # --------------------------------------------------
