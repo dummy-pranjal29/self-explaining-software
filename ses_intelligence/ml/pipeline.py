@@ -139,12 +139,15 @@ class IntelligencePipeline:
         health_output = health_engine.compute()
 
         # ---------------------------------
-        # PERSIST HEALTH HISTORY
+        # LOAD HEALTH HISTORY
         # ---------------------------------
+        # NOTE:
+        # `ArchitectureHealthEngine.compute()` already appends a normalized
+        # `{"health_score": ...}` record internally. Persisting `health_output`
+        # again here breaks `ArchitectureHealthHistory.append()` because the
+        # engine returns `architecture_health_score` (not `health_score`).
 
         history_store = ArchitectureHealthHistory()
-        history_store.append(health_output)
-
         history_data = history_store.load()
 
         # ---------------------------------

@@ -1,16 +1,11 @@
-import os
-import json
-from datetime import datetime
+print("NEW ARCHITECTURE HEALTH ENGINE LOADED")
+
 from typing import Dict, List
 
 from .stability_index import EdgeStabilityCalculator
 from .health_score import ArchitectureHealthScore
 from .confidence import ForecastConfidenceEngine
-
-
-HEALTH_HISTORY_PATH = (
-    "behavior_data/architecture_health/health_history.json"
-)
+from .history import ArchitectureHealthHistory
 
 
 class ArchitectureHealthEngine:
@@ -34,41 +29,14 @@ class ArchitectureHealthEngine:
         self.edge_features = edge_features
         self.anomaly_frequency_map = anomaly_frequency_map or {}
 
-    # --------------------------------------
-    # Health History Persistence
-    # --------------------------------------
-
-    def _load_health_history(self) -> List[Dict]:
-        if not os.path.exists(HEALTH_HISTORY_PATH):
-            return []
-
-        with open(HEALTH_HISTORY_PATH, "r") as f:
-            return json.load(f)
-
-    def _save_health_history(self, history: List[Dict]) -> None:
-        os.makedirs(
-            os.path.dirname(HEALTH_HISTORY_PATH),
-            exist_ok=True
-        )
-
-        with open(HEALTH_HISTORY_PATH, "w") as f:
-            json.dump(history, f, indent=4)
-
-    def _append_health_snapshot(self, health_score: float) -> None:
-        history = self._load_health_history()
-
-        history.append({
-            "timestamp": datetime.utcnow().isoformat(),
-            "health_score": health_score
-        })
-
-        self._save_health_history(history)
+        self.history_store = ArchitectureHealthHistory()
 
     # --------------------------------------
     # Main Execution
     # --------------------------------------
 
     def compute(self) -> Dict:
+
         if not self.snapshots:
             return {
                 "status": "no_snapshots"
@@ -102,14 +70,22 @@ class ArchitectureHealthEngine:
             "architecture_health_score"
         ]
 
-        # Persist score to history
-        self._append_health_snapshot(architecture_health_score)
+        # -----------------------------
+        # Step 3 — Persist To History
+        # -----------------------------
+        health_output = {
+            "health_score": architecture_health_score,
+            "edge_count": health_summary["edge_count"],
+            "edges": stability_rows,
+        }
+
+        self.history_store.append(health_output)
 
         # -----------------------------
-        # Step 3 — Statistical Confidence Modeling
+        # Step 4 — Forecast Intelligence
         # -----------------------------
         confidence_engine = ForecastConfidenceEngine(
-            history_path=HEALTH_HISTORY_PATH,
+            history_path=str(self.history_store.path),
             window_size=10,
         )
 

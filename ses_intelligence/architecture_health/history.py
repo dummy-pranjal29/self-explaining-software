@@ -34,6 +34,13 @@ HEALTH_DIR.mkdir(parents=True, exist_ok=True)
 class ArchitectureHealthHistory:
     """
     Append-only store for architecture health computation results.
+
+    Each record format:
+    {
+        "timestamp": "...",
+        "health_score": float,
+        "raw": { full_health_output_dict }
+    }
     """
 
     filename: str = "health_history.json"
@@ -46,12 +53,8 @@ class ArchitectureHealthHistory:
 
     def load(self) -> List[Dict[str, Any]]:
         """
-        Load the full health history as a list of records.
-        Each record structure:
-        {
-            "timestamp": "...",
-            "health": { ... full health_output dict ... }
-        }
+        Load full health history.
+        Always returns a list.
         """
 
         if not self.path.exists():
@@ -70,27 +73,58 @@ class ArchitectureHealthHistory:
             return []
 
         except (OSError, json.JSONDecodeError):
-            # Never crash runtime intelligence due to history corruption
             return []
 
     # ------------------------------------------------------
 
     def append(self, health_output: Dict[str, Any]) -> None:
         """
-        Append a single health result with timestamp metadata.
+        Append new health record.
+
+        health_output MUST contain:
+        {
+            "health_score": float,
+            ...
+        }
         """
+
+        if not isinstance(health_output, dict):
+            raise ValueError("health_output must be a dictionary")
+
+        health_score = health_output.get("health_score")
+
+        if health_score is None:
+            raise ValueError("health_output missing 'health_score' key")
 
         history = self.load()
 
         record: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "health": health_output,
+            "health_score": float(health_score),
+            "raw": health_output,
         }
 
         history.append(record)
 
-        # Full rewrite (safe for small files)
         self.path.write_text(
             json.dumps(history, indent=2, default=str),
             encoding="utf-8",
         )
+
+    # ------------------------------------------------------
+
+    def get_health_scores(self) -> List[float]:
+        """
+        Extract health score time series for forecasting.
+        """
+
+        history = self.load()
+
+        scores: List[float] = []
+
+        for entry in history:
+            score = entry.get("health_score")
+            if isinstance(score, (int, float)):
+                scores.append(float(score))
+
+        return scores

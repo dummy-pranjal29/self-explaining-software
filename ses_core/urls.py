@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path
+from django.urls import path, include
 
 from demo_app.views import (
     signup,
@@ -22,5 +23,5 @@ urlpatterns = [
     path("debug/behavior-history/", behavior_history_debug),
     path("debug/anomalies/", anomaly_debug),
     path("debug/narrative/", narrative_debug),
-
+    path("api/", include("ses_api.urls")),
 ]
