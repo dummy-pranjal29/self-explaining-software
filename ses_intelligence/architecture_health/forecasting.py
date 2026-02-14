@@ -4,8 +4,9 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
-from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
-
+from ses_intelligence.architecture_health.history import (
+    ArchitectureHealthHistory
+)
 
 # ==========================================================
 # EDGE-LEVEL RISK FORECASTER
@@ -157,38 +158,37 @@ class RiskForecaster:
 
 
 # ==========================================================
-# ARCHITECTURE HEALTH FORECASTER
+# ADVANCED ARCHITECTURE HEALTH FORECASTER (PHASE 3)
 # ==========================================================
 
 class ArchitectureHealthForecaster:
     """
-    Predicts future architecture health score
-    using linear regression over persisted health history.
+    Advanced architecture health forecasting with:
+
+    - Long-term slope
+    - Short-term slope
+    - Exponential smoothing
+    - Divergence detection
     """
 
     MIN_POINTS_REQUIRED = 5
     RISK_THRESHOLD = 70
 
-    def __init__(self):
-        # Load from correct history store
+    def __init__(self, alpha=0.4, short_window=10):
+        self.alpha = alpha
+        self.short_window = short_window
         self.history = ArchitectureHealthHistory().load()
 
     # --------------------------------------------------
 
-    def forecast(self, steps_ahead=10):
-
-        if not self.history:
-            return {
-                "status": "insufficient_data",
-                "message": "No health history available"
-            }
+    def _extract_scores(self):
 
         scores = []
 
         for entry in self.history:
+
             try:
                 health_block = entry.get("health", {})
-
                 score = health_block.get("architecture_health_score")
 
                 if score is not None:
@@ -197,31 +197,109 @@ class ArchitectureHealthForecaster:
             except (KeyError, TypeError):
                 continue
 
+        return scores
+
+    # --------------------------------------------------
+
+    def _compute_slope(self, values):
+
+        if len(values) < 2:
+            return 0.0
+
+        t = np.arange(len(values))
+        slope = np.polyfit(t, values, 1)[0]
+
+        return slope
+
+    # --------------------------------------------------
+
+    def _exponential_smoothing(self, values):
+
+        smoothed = values[0]
+
+        for v in values[1:]:
+            smoothed = self.alpha * v + (1 - self.alpha) * smoothed
+
+        return smoothed
+
+    # --------------------------------------------------
+
+    def forecast(self, steps_ahead=10):
+
+        scores = self._extract_scores()
+
         if len(scores) < self.MIN_POINTS_REQUIRED:
             return {
                 "status": "insufficient_data",
                 "message": "Not enough history for forecasting"
             }
 
-        t = np.arange(len(scores))
-        slope, intercept = np.polyfit(t, scores, 1)
+        current_health = scores[-1]
 
-        current_index = len(scores) - 1
+        # Long-term slope
+        long_term_slope = self._compute_slope(scores)
 
-        predicted_future = slope * (current_index + steps_ahead) + intercept
-        predicted_future = float(max(0, min(100, predicted_future)))
+        # Short-term slope
+        recent = (
+            scores[-self.short_window:]
+            if len(scores) >= self.short_window
+            else scores
+        )
 
+        short_term_slope = self._compute_slope(recent)
+
+        # Linear projection
+        linear_projection = (
+            current_health + (long_term_slope * steps_ahead)
+        )
+
+        linear_projection = float(
+            max(0, min(100, linear_projection))
+        )
+
+        # Exponential smoothing projection
+        smoothed_projection = float(
+            max(0, min(100, self._exponential_smoothing(scores)))
+        )
+
+        # Divergence signal
+        divergence = short_term_slope - long_term_slope
+
+        if divergence < -0.05:
+            trend_signal = "early_degradation"
+        elif divergence > 0.05:
+            trend_signal = "accelerating_improvement"
+        else:
+            trend_signal = "stable"
+
+        # Risk crossing estimate
         snapshots_until_risk = None
 
-        if slope < 0:
-            t_cross = (self.RISK_THRESHOLD - intercept) / slope
-            if t_cross > current_index:
-                snapshots_until_risk = int(t_cross - current_index)
+        if long_term_slope < 0:
+            intercept = np.polyfit(
+                np.arange(len(scores)),
+                scores,
+                1
+            )[1]
+
+            t_cross = (
+                (self.RISK_THRESHOLD - intercept)
+                / long_term_slope
+            )
+
+            if t_cross > len(scores):
+                snapshots_until_risk = int(
+                    t_cross - len(scores)
+                )
 
         return {
             "status": "forecast_generated",
-            "current_health": float(scores[-1]),
-            "slope_per_snapshot": float(slope),
-            "predicted_health_next_window": predicted_future,
+            "current_health": float(current_health),
+            "long_term_slope": float(long_term_slope),
+            "short_term_slope": float(short_term_slope),
+            "trend_divergence": float(divergence),
+            "trend_signal": trend_signal,
+            "linear_projection_next_window": linear_projection,
+            "smoothed_projection": smoothed_projection,
             "snapshots_until_risk": snapshots_until_risk,
         }

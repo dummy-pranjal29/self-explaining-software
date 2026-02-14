@@ -6,15 +6,25 @@ from collections import defaultdict
 from ses_intelligence.ml.features import FeatureExtractor
 from ses_intelligence.ml.anomaly import AnomalyDetector
 from ses_intelligence.behavior_change.history import SnapshotStore
+
 from ses_intelligence.architecture_health.engine import ArchitectureHealthEngine
 from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
 from ses_intelligence.architecture_health.trend import ArchitectureHealthTrend
-from ses_intelligence.architecture_health.forecasting import RiskForecaster
+from ses_intelligence.architecture_health.forecasting import (
+    RiskForecaster,
+    ArchitectureHealthForecaster,
+)
 from ses_intelligence.architecture_health.risk_labels import RiskLabelGenerator
 from ses_intelligence.architecture_health.escalation import RiskEscalationEngine
-from ses_intelligence.architecture_health.forecasting import ArchitectureHealthForecaster
-
-
+from ses_intelligence.architecture_health.confidence import (
+    ForecastConfidenceEngine
+)
+from ses_intelligence.architecture_health.impact import (
+    EdgeImpactAnalyzer
+)
+from ses_intelligence.architecture_health.degradation import (
+    EarlyDegradationClassifier
+)
 
 
 class IntelligencePipeline:
@@ -134,25 +144,56 @@ class IntelligencePipeline:
         history_data = history_store.load()
 
         # ---------------------------------
-        # COMPUTE TREND
+        # HEALTH TREND
         # ---------------------------------
 
         trend_engine = ArchitectureHealthTrend(history_data)
         trend_output = trend_engine.compute()
 
         # ---------------------------------
-        # HEALTH FORECASTING
+        # ADVANCED HEALTH FORECAST (PHASE 3)
         # ---------------------------------
 
         forecaster = ArchitectureHealthForecaster()
         forecast_output = forecaster.forecast(steps_ahead=10)
 
+        # ---------------------------------
+        # FORECAST CONFIDENCE (PHASE 1)
+        # ---------------------------------
+
+        confidence_engine = ForecastConfidenceEngine(
+            history_path=None,
+            window_size=10,
+        )
+
+        confidence_output = confidence_engine.run_from_memory(
+            history_data
+        )
 
         # ---------------------------------
-        # RISK FORECASTING (FIXED)
+        # EDGE RISK FORECASTING
         # ---------------------------------
 
         risk_output = self._compute_edge_risk(raw_snapshots)
+
+        # ---------------------------------
+        # EDGE IMPACT RANKING (PHASE 2)
+        # ---------------------------------
+
+        impact_output = []
+
+        if (
+            isinstance(risk_output, dict)
+            and "current_edge_predictions" in risk_output
+        ):
+            latest_graph = snapshots[-1].graph
+
+            impact_analyzer = EdgeImpactAnalyzer(
+                graph=latest_graph,
+                edge_risk_predictions=risk_output["current_edge_predictions"],
+            )
+
+            impact_output = impact_analyzer.compute()
 
         # ---------------------------------
         # ESCALATION OVERRIDE
@@ -173,8 +214,23 @@ class IntelligencePipeline:
 
             escalation_output = escalation_engine.apply()
 
-            health_output["risk_adjusted_score"] = escalation_output["adjusted_health"]
+            health_output["risk_adjusted_score"] = (
+                escalation_output["adjusted_health"]
+            )
 
+        # ---------------------------------
+        # EARLY DEGRADATION CLASSIFICATION (PHASE 4)
+        # ---------------------------------
+
+        degradation_classifier = EarlyDegradationClassifier()
+        training_result = degradation_classifier.train()
+
+        if training_result.get("status") == "trained":
+            degradation_output = (
+                degradation_classifier.predict_current_risk()
+            )
+        else:
+            degradation_output = training_result
 
         # ---------------------------------
         # FINAL OUTPUT
@@ -189,14 +245,16 @@ class IntelligencePipeline:
             "anomalies": anomaly_results,
             "architecture_health": health_output,
             "health_trend": trend_output,
-            "edge_risk_forecast": risk_output,
-            "risk_escalation": escalation_output,
             "health_forecast": forecast_output,
-
+            "forecast_confidence": confidence_output,
+            "edge_risk_forecast": risk_output,
+            "edge_impact_ranking": impact_output,
+            "risk_escalation": escalation_output,
+            "early_degradation_prediction": degradation_output,
         }
 
     # --------------------------------------------------
-    # EDGE RISK FORECASTING (PROPER FORECAST)
+    # EDGE RISK FORECASTING
     # --------------------------------------------------
 
     def _compute_edge_risk(self, raw_snapshots):
@@ -205,10 +263,6 @@ class IntelligencePipeline:
             return {
                 "status": "insufficient_snapshot_history"
             }
-
-        # ---------------------------------
-        # TRAIN ON HISTORICAL TRANSITIONS
-        # ---------------------------------
 
         label_generator = RiskLabelGenerator(raw_snapshots)
         dataset = label_generator.generate()
@@ -221,10 +275,6 @@ class IntelligencePipeline:
 
         if training_result.get("status") != "trained":
             return training_result
-
-        # ---------------------------------
-        # BUILD FEATURE MATRIX FOR LATEST SNAPSHOT ONLY
-        # ---------------------------------
 
         latest_snapshot = raw_snapshots[-1]
         latest_edges = latest_snapshot.get("edge_signature", {})
@@ -241,12 +291,7 @@ class IntelligencePipeline:
 
             edge_keys.append(edge_key)
 
-        # ---------------------------------
-        # PREDICT ON CURRENT ARCHITECTURE
-        # ---------------------------------
-
         prediction_result = forecaster.predict(latest_feature_vectors)
-
         probabilities = prediction_result.get("probabilities", [])
 
         risk_classification = []
@@ -257,7 +302,6 @@ class IntelligencePipeline:
                 "instability_probability": round(prob, 4),
                 "risk_tier": forecaster.classify_risk(prob),
             })
-
 
         insights = forecaster.get_model_insights()
 
