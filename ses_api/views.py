@@ -1,13 +1,16 @@
 import json
 import os
+import logging
 from django.http import JsonResponse
 from django.conf import settings
 from datetime import datetime
 from ses_intelligence.architecture_health.engine import ArchitectureHealthEngine
+from ses_intelligence.architecture_health.confidence import ForecastConfidenceEngine
 from ses_intelligence.runtime_state import get_runtime_snapshots
 from ses_intelligence.tracing import get_edge_features
 
 BASE_PATH = os.path.join(settings.BASE_DIR, "behavior_data", "architecture_health")
+logger = logging.getLogger(__name__)
 
 
 def load_json(filename):
@@ -16,6 +19,12 @@ def load_json(filename):
         return {}
     with open(path, "r") as f:
         return json.load(f)
+
+
+def _compute_forecast_from_history():
+    history_path = os.path.join(BASE_PATH, "health_history.json")
+    engine = ForecastConfidenceEngine(history_path=history_path, window_size=10)
+    return engine.run()
 
 
 def api_health(request):
@@ -39,9 +48,56 @@ def api_health(request):
 
 
 def api_forecast(request):
-    forecast = load_json("forecast_output.json")
+    forecast = {}
+    history = []
+
+    try:
+        persisted_forecast = load_json("forecast_output.json")
+        if isinstance(persisted_forecast, dict) and persisted_forecast:
+            forecast = persisted_forecast
+        else:
+            logger.warning(
+                "Persisted forecast_output.json missing/empty; recomputing from health history",
+                extra={"base_path": BASE_PATH},
+            )
+            forecast = _compute_forecast_from_history()
+    except Exception:
+        logger.exception("Failed to load or compute forecast", extra={"base_path": BASE_PATH})
+        forecast = {
+            "status": "error",
+            "message": "Forecast computation failed",
+        }
+
+    # Load health history for the frontend
+    try:
+        history_path = os.path.join(BASE_PATH, "health_history.json")
+        if os.path.exists(history_path):
+            with open(history_path, "r") as f:
+                history_data = json.load(f)
+            
+            # Extract relevant fields for frontend (timestamp and health_score)
+            for entry in history_data:
+                if isinstance(entry, dict):
+                    # Try different possible field names for health score
+                    health_score = (
+                        entry.get("health_score") or
+                        entry.get("architecture_health_score") or
+                        entry.get("health", {}).get("architecture_health_score") or
+                        entry.get("raw", {}).get("health_score") or
+                        entry.get("raw", {}).get("architecture_health_score")
+                    )
+                    timestamp = entry.get("timestamp")
+                    if health_score is not None and timestamp:
+                        history.append({
+                            "timestamp": timestamp,
+                            "health_score": health_score
+                        })
+    except Exception:
+        logger.exception("Failed to load health history", extra={"base_path": BASE_PATH})
+
     return JsonResponse({
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.utcnow().isoformat(),
+        "history": history,
         "forecast": forecast
     })
 

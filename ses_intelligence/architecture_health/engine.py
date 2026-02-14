@@ -91,9 +91,12 @@ class ArchitectureHealthEngine:
 
         confidence_output = confidence_engine.run()
 
-        # -----------------------------
-        # Final Response
-        # -----------------------------
+        # Calculate average stability index from edges
+        avg_stability = 0.0
+        if stability_rows:
+            total_stability = sum(row.get("stability_index", 0) for row in stability_rows)
+            avg_stability = total_stability / len(stability_rows)
+
         return {
             "status": "success",
 
@@ -103,6 +106,7 @@ class ArchitectureHealthEngine:
 
             # Stability details
             "edges": stability_rows,
+            "stability_index": avg_stability,
 
             # Statistical forecast intelligence
             "forecast_intelligence": confidence_output,

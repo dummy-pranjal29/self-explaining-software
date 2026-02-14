@@ -50,6 +50,14 @@ class ForecastConfidenceEngine:
 
         for entry in history_data:
 
+            if not isinstance(entry, dict):
+                continue
+
+            # Case 0: flat health score (current history store format)
+            if "health_score" in entry:
+                values.append(entry["health_score"])
+                continue
+
             # Case 1: flat
             if "architecture_health_score" in entry:
                 values.append(entry["architecture_health_score"])
@@ -73,6 +81,16 @@ class ForecastConfidenceEngine:
                     and "architecture_health_score" in block
                 ):
                     values.append(block["architecture_health_score"])
+
+            # Case 4: nested in raw block
+            elif "raw" in entry:
+                block = entry["raw"]
+
+                if isinstance(block, dict):
+                    if "health_score" in block:
+                        values.append(block["health_score"])
+                    elif "architecture_health_score" in block:
+                        values.append(block["architecture_health_score"])
 
         return values
 
