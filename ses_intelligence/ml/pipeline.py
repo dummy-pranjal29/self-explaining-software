@@ -8,7 +8,6 @@ from ses_intelligence.ml.anomaly import AnomalyDetector
 from ses_intelligence.behavior_change.history import SnapshotStore
 
 from ses_intelligence.architecture_health.engine import ArchitectureHealthEngine
-from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
 from ses_intelligence.architecture_health.trend import ArchitectureHealthTrend
 from ses_intelligence.architecture_health.forecasting import (
     RiskForecaster,
@@ -28,7 +27,9 @@ from ses_intelligence.architecture_health.degradation import (
 from ses_intelligence.narrative.refiner import (
     ExecutiveNarrativeRefiner
 )
-
+from ses_intelligence.architecture_health.history import (
+    ArchitectureHealthHistory
+)
 
 
 class IntelligencePipeline:
@@ -106,6 +107,10 @@ class IntelligencePipeline:
         detector.fit(edge_features)
         anomaly_results = detector.score(edge_features)
 
+        anomaly_count = sum(
+            1 for r in anomaly_results if r["is_anomaly"]
+        )
+
         # ---------------------------------
         # BUILD ANOMALY FREQUENCY MAP
         # ---------------------------------
@@ -127,7 +132,7 @@ class IntelligencePipeline:
             anomaly_frequency_map[edge] /= max(1, total_edges)
 
         # ---------------------------------
-        # ARCHITECTURE HEALTH
+        # ARCHITECTURE HEALTH ENGINE
         # ---------------------------------
 
         health_engine = ArchitectureHealthEngine(
@@ -139,43 +144,32 @@ class IntelligencePipeline:
         health_output = health_engine.compute()
 
         # ---------------------------------
-        # LOAD HEALTH HISTORY
+        # TREND
         # ---------------------------------
-        # NOTE:
-        # `ArchitectureHealthEngine.compute()` already appends a normalized
-        # `{"health_score": ...}` record internally. Persisting `health_output`
-        # again here breaks `ArchitectureHealthHistory.append()` because the
-        # engine returns `architecture_health_score` (not `health_score`).
 
         history_store = ArchitectureHealthHistory()
         history_data = history_store.load()
-
-        # ---------------------------------
-        # HEALTH TREND
-        # ---------------------------------
 
         trend_engine = ArchitectureHealthTrend(history_data)
         trend_output = trend_engine.compute()
 
         # ---------------------------------
-        # ADVANCED HEALTH FORECAST (PHASE 3)
+        # FORECAST
         # ---------------------------------
 
         forecaster = ArchitectureHealthForecaster()
         forecast_output = forecaster.forecast(steps_ahead=10)
 
         # ---------------------------------
-        # FORECAST CONFIDENCE (PHASE 1)
+        # CONFIDENCE
         # ---------------------------------
 
         confidence_engine = ForecastConfidenceEngine(
-            history_path=None,
+            history_path=str(history_store.path),
             window_size=10,
         )
 
-        confidence_output = confidence_engine.run_from_memory(
-            history_data
-        )
+        confidence_output = confidence_engine.run()
 
         # ---------------------------------
         # EDGE RISK FORECASTING
@@ -184,10 +178,11 @@ class IntelligencePipeline:
         risk_output = self._compute_edge_risk(raw_snapshots)
 
         # ---------------------------------
-        # EDGE IMPACT RANKING (PHASE 2)
+        # EDGE IMPACT + ESCALATION
         # ---------------------------------
 
         impact_output = []
+        escalation_output = None
 
         if (
             isinstance(risk_output, dict)
@@ -202,17 +197,6 @@ class IntelligencePipeline:
 
             impact_output = impact_analyzer.compute()
 
-        # ---------------------------------
-        # ESCALATION OVERRIDE
-        # ---------------------------------
-
-        escalation_output = None
-
-        if (
-            isinstance(risk_output, dict)
-            and "current_edge_predictions" in risk_output
-        ):
-
             escalation_engine = RiskEscalationEngine(
                 base_health=health_output["architecture_health_score"],
                 edge_predictions=risk_output["current_edge_predictions"],
@@ -221,12 +205,8 @@ class IntelligencePipeline:
 
             escalation_output = escalation_engine.apply()
 
-            health_output["risk_adjusted_score"] = (
-                escalation_output["adjusted_health"]
-            )
-
         # ---------------------------------
-        # EARLY DEGRADATION CLASSIFICATION (PHASE 4)
+        # EARLY DEGRADATION
         # ---------------------------------
 
         degradation_classifier = EarlyDegradationClassifier()
@@ -239,9 +219,8 @@ class IntelligencePipeline:
         else:
             degradation_output = training_result
 
-
         # ---------------------------------
-        # EXECUTIVE NARRATIVE (PHASE 5)
+        # EXECUTIVE NARRATIVE
         # ---------------------------------
 
         narrative_refiner = ExecutiveNarrativeRefiner({
@@ -250,14 +229,11 @@ class IntelligencePipeline:
             "health_forecast": forecast_output,
             "forecast_confidence": confidence_output,
             "edge_impact_ranking": impact_output,
-            "anomalies_detected": sum(
-                1 for r in anomaly_results if r["is_anomaly"]
-            ),
+            "anomalies_detected": anomaly_count,
             "early_degradation_prediction": degradation_output,
         })
 
         executive_summary = narrative_refiner.generate()
-
 
         # ---------------------------------
         # FINAL OUTPUT
@@ -266,9 +242,7 @@ class IntelligencePipeline:
         return {
             "status": "success",
             "total_edges": len(edge_features),
-            "anomalies_detected": sum(
-                1 for r in anomaly_results if r["is_anomaly"]
-            ),
+            "anomalies_detected": anomaly_count,
             "anomalies": anomaly_results,
             "architecture_health": health_output,
             "health_trend": trend_output,

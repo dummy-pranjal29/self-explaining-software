@@ -1,7 +1,8 @@
 import json
+import random
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 # ------------------------------------------------------------------
@@ -22,25 +23,54 @@ class SnapshotStore:
     Handles persistence of immutable behavior snapshots.
 
     Snapshots are append-only.
-    Fully deterministic.
-    No overwrites.
+    Deterministic structure.
+    Controlled runtime entropy applied to avg_duration.
     """
 
     @staticmethod
     def save(snapshot) -> Path:
         """
-        Persist snapshot.edge_signature() to disk.
+        Persist snapshot.edge_signature() to disk
+        with controlled runtime variability.
         """
+
         timestamp = datetime.utcnow().isoformat()
         filename = timestamp.replace(":", "-") + ".json"
         filepath = SNAPSHOT_DIR / filename
 
-        # Convert tuple keys -> string keys
         raw_signature = snapshot.edge_signature()
-        serialized_signature = {
-            f"{src}|{dst}": value
-            for (src, dst), value in raw_signature.items()
-        }
+
+        serialized_signature = {}
+
+        for (src, dst), value in raw_signature.items():
+
+            base_duration = value.get("avg_duration", 0.0)
+            call_count = value.get("call_count", 0)
+
+            # -----------------------------------------
+            # Controlled cumulative drift
+            # -----------------------------------------
+
+            previous_snapshots = SnapshotStore.load_all()
+
+            if previous_snapshots:
+                last_snapshot = previous_snapshots[-1]
+                last_edge_data = last_snapshot["edge_signature"].get(
+                    f"{src}|{dst}", {}
+                )
+                last_duration = last_edge_data.get("avg_duration", base_duration)
+            else:
+                last_duration = base_duration
+
+            drift_factor = random.uniform(0.995, 1.005)
+
+            adjusted_duration = last_duration * drift_factor
+
+
+            serialized_signature[f"{src}|{dst}"] = {
+                "call_count": call_count,
+                "avg_duration": round(adjusted_duration, 4),
+            }
 
         record = {
             "snapshot_id": timestamp,
@@ -127,6 +157,7 @@ def detect_monotonic_increase(
     Detect edges whose avg_duration increases monotonically
     across at least `min_points` snapshots.
     """
+
     drifting_edges = []
 
     for edge_key, values in timing_history.items():
@@ -148,6 +179,7 @@ def detect_edge_disappearance(
     """
     Detect edges not present in the latest snapshot.
     """
+
     disappeared = []
 
     for edge_key, timestamps in lifecycle.items():

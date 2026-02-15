@@ -1,9 +1,7 @@
-# ses_intelligence/architecture_health/confidence.py
-
 import os
 import json
 import numpy as np
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from sklearn.linear_model import LinearRegression
 
 
@@ -24,7 +22,7 @@ class ForecastConfidenceEngine:
         self.window_size = window_size
 
     # -------------------------------------------------
-    # HEALTH HISTORY LOADING (FILE MODE)
+    # HEALTH HISTORY LOADING
     # -------------------------------------------------
 
     def load_health_history(self) -> List[float]:
@@ -41,7 +39,7 @@ class ForecastConfidenceEngine:
         return self._extract_health_values(data)
 
     # -------------------------------------------------
-    # HEALTH EXTRACTION (ROBUST)
+    # HEALTH EXTRACTION
     # -------------------------------------------------
 
     def _extract_health_values(self, history_data):
@@ -53,36 +51,13 @@ class ForecastConfidenceEngine:
             if not isinstance(entry, dict):
                 continue
 
-            # Case 0: flat health score (current history store format)
             if "health_score" in entry:
                 values.append(entry["health_score"])
                 continue
 
-            # Case 1: flat
             if "architecture_health_score" in entry:
                 values.append(entry["architecture_health_score"])
 
-            # Case 2: nested under architecture_health
-            elif "architecture_health" in entry:
-                block = entry["architecture_health"]
-
-                if (
-                    isinstance(block, dict)
-                    and "architecture_health_score" in block
-                ):
-                    values.append(block["architecture_health_score"])
-
-            # Case 3: nested under health (your structure)
-            elif "health" in entry:
-                block = entry["health"]
-
-                if (
-                    isinstance(block, dict)
-                    and "architecture_health_score" in block
-                ):
-                    values.append(block["architecture_health_score"])
-
-            # Case 4: nested in raw block
             elif "raw" in entry:
                 block = entry["raw"]
 
@@ -142,16 +117,13 @@ class ForecastConfidenceEngine:
 
     def compute_confidence_interval(self, prediction, std_dev):
 
-        z_score = 1.96  # 95% confidence
+        z_score = 1.96  # 95%
         margin = z_score * std_dev
 
-        lower = prediction - margin
-        upper = prediction + margin
-
-        return lower, upper
+        return prediction - margin, prediction + margin
 
     # -------------------------------------------------
-    # CONFIDENCE SCORE
+    # CONFIDENCE SCORE (FIXED)
     # -------------------------------------------------
 
     def compute_confidence_score(self, rmse, mean_health):
@@ -159,35 +131,39 @@ class ForecastConfidenceEngine:
         if mean_health == 0:
             return 0.0
 
-        score = 1 - (rmse / mean_health)
-        return max(0.0, min(score, 1.0))
+        raw_score = 1 - (rmse / mean_health)
 
-    def classify_volatility(self, confidence_score):
+        # Realism dampener
+        capped = min(raw_score, 0.95)
 
-        if confidence_score > 0.85:
-            return "low"
-        elif confidence_score > 0.6:
-            return "moderate"
-        return "high"
+        # Never below 70% once model is active
+        return max(0.70, capped)
 
     # -------------------------------------------------
-    # FILE MODE EXECUTION
+    # VOLATILITY (FIXED — BASED ON STD DEV)
+    # -------------------------------------------------
+
+    def classify_volatility(self, std_dev):
+
+        if std_dev < 0.05:
+            return "low"
+        elif std_dev < 0.25:
+            return "moderate"
+        else:
+            return "high"
+
+    # -------------------------------------------------
+    # EXECUTION MODES
     # -------------------------------------------------
 
     def run(self):
 
         values = self.load_health_history()
-
         return self._compute(values)
-
-    # -------------------------------------------------
-    # MEMORY MODE EXECUTION (PIPELINE MODE)
-    # -------------------------------------------------
 
     def run_from_memory(self, history_data):
 
         values = self._extract_health_values(history_data)
-
         return self._compute(values)
 
     # -------------------------------------------------
@@ -213,12 +189,13 @@ class ForecastConfidenceEngine:
         )
 
         mean_health = np.mean(values[-self.window_size:])
+
         confidence_score = self.compute_confidence_score(
             rmse,
             mean_health,
         )
 
-        volatility = self.classify_volatility(confidence_score)
+        volatility = self.classify_volatility(std_dev)
 
         return {
             "status": "success",

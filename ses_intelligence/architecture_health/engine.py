@@ -38,9 +38,7 @@ class ArchitectureHealthEngine:
     def compute(self) -> Dict:
 
         if not self.snapshots:
-            return {
-                "status": "no_snapshots"
-            }
+            return {"status": "no_snapshots"}
 
         latest_snapshot = self.snapshots[-1]
         graph = latest_snapshot.graph
@@ -71,19 +69,47 @@ class ArchitectureHealthEngine:
         ]
 
         # -----------------------------
+        # Derived Metrics
+        # -----------------------------
+
+        # Average stability index
+        avg_stability = 0.0
+        if stability_rows:
+            total_stability = sum(
+                row.get("stability_index", 0)
+                for row in stability_rows
+            )
+            avg_stability = total_stability / len(stability_rows)
+
+        # Anomaly pressure (normalized)
+        anomaly_count = sum(
+            1 for row in stability_rows
+            if row.get("anomaly_flag") is True
+        )
+
+        # Simple drift score proxy
+        drift_score = 1 - avg_stability if avg_stability else 0.0
+
+        # -----------------------------
         # Step 3 — Persist To History
         # -----------------------------
-        health_output = {
+
+        enriched_health_output = {
             "health_score": architecture_health_score,
+            "architecture_health_score": architecture_health_score,
+            "stability_index": avg_stability,
+            "drift_score": drift_score,
+            "anomaly_count": anomaly_count,
             "edge_count": health_summary["edge_count"],
             "edges": stability_rows,
         }
 
-        self.history_store.append(health_output)
+        self.history_store.append(enriched_health_output)
 
         # -----------------------------
         # Step 4 — Forecast Intelligence
         # -----------------------------
+
         confidence_engine = ForecastConfidenceEngine(
             history_path=str(self.history_store.path),
             window_size=10,
@@ -91,11 +117,9 @@ class ArchitectureHealthEngine:
 
         confidence_output = confidence_engine.run()
 
-        # Calculate average stability index from edges
-        avg_stability = 0.0
-        if stability_rows:
-            total_stability = sum(row.get("stability_index", 0) for row in stability_rows)
-            avg_stability = total_stability / len(stability_rows)
+        # -----------------------------
+        # Final Engine Output
+        # -----------------------------
 
         return {
             "status": "success",
@@ -104,10 +128,12 @@ class ArchitectureHealthEngine:
             "architecture_health_score": architecture_health_score,
             "edge_count": health_summary["edge_count"],
 
-            # Stability details
-            "edges": stability_rows,
+            # Stability metrics
             "stability_index": avg_stability,
+            "drift_score": drift_score,
+            "anomaly_count": anomaly_count,
+            "edges": stability_rows,
 
-            # Statistical forecast intelligence
+            # Forecast intelligence
             "forecast_intelligence": confidence_output,
         }
