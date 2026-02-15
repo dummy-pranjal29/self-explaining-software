@@ -19,14 +19,19 @@ export default function ForecastTimeline({ data }: Props) {
     health: number;
     stability: number | null;
   };
-  const history: MappedHistoryItem[] = data.history.map((v: HistoryItem) => ({
-    timestamp: new Date(v.timestamp),
-    health: v.health_score,
-    stability: v.stability_index ?? null,
-  }));
+  const history: MappedHistoryItem[] =
+    data?.history?.map((v: HistoryItem) => ({
+      timestamp: new Date(v.timestamp),
+      health: v.health_score,
+      stability: v.stability_index ?? null,
+    })) ?? [];
+
+  // Handle missing or error forecast data
+  const forecastData =
+    data?.forecast?.status === "success" ? data.forecast : null;
 
   const lastActual = history[history.length - 1]?.health ?? 0;
-  const forecastValue = data.forecast.forecast_next;
+  const forecastValue = forecastData?.forecast_next ?? 0;
   const delta = forecastValue - lastActual;
 
   const slopeIcon = delta > 0.05 ? "↑" : delta < -0.05 ? "↓" : "→";
@@ -39,14 +44,16 @@ export default function ForecastTimeline({ data }: Props) {
         : "text-neutral-400";
 
   const volatilityColor =
-    data.forecast.volatility === "low"
+    forecastData?.volatility === "low"
       ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10"
-      : data.forecast.volatility === "medium"
+      : forecastData?.volatility === "medium"
         ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
         : "text-red-400 border-red-400/30 bg-red-400/10";
 
+  const hasData = forecastData && history.length > 0;
+
   useEffect(() => {
-    if (!svgRef.current || history.length === 0) return;
+    if (!svgRef.current || !hasData) return;
 
     const svgEl = svgRef.current;
     const svg = d3.select(svgEl);
@@ -238,28 +245,42 @@ export default function ForecastTimeline({ data }: Props) {
             className="px-3 py-1 rounded-full border border-neutral-700 text-neutral-300"
             title="Model confidence based on residual variance and forecast error."
           >
-            Confidence {(data.forecast.confidence_score * 100).toFixed(1)}%
+            Confidence{" "}
+            {forecastData
+              ? `${(forecastData.confidence_score * 100).toFixed(1)}%`
+              : "N/A"}
           </span>
 
           <span
             className={`px-3 py-1 rounded-full border ${volatilityColor}`}
             title="Volatility measures how unstable recent architectural changes are."
           >
-            Volatility {data.forecast.volatility}
+            Volatility {forecastData?.volatility ?? "N/A"}
           </span>
         </div>
       </div>
 
-      <div className={`flex items-center gap-4 text-sm ${slopeColor}`}>
-        <span className="text-xl font-semibold">{slopeIcon}</span>
+      <div
+        className={`flex items-center gap-4 text-sm ${hasData ? slopeColor : "text-neutral-400"}`}
+      >
+        <span className="text-xl font-semibold">
+          {hasData ? slopeIcon : "—"}
+        </span>
         <span title="Difference between last recorded health and predicted next health.">
-          Δ Forecast vs Last: {delta >= 0 ? "+" : ""}
-          {delta.toFixed(2)}
+          {hasData
+            ? `Δ Forecast vs Last: ${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`
+            : "No data available"}
         </span>
       </div>
 
       <div className="h-[420px] w-full relative">
-        <svg ref={svgRef} className="w-full h-full" />
+        {hasData ? (
+          <svg ref={svgRef} className="w-full h-full" />
+        ) : (
+          <div className="flex items-center justify-center h-full text-neutral-500">
+            No historical data available. Start tracing to see forecasts.
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
@@ -269,7 +290,7 @@ export default function ForecastTimeline({ data }: Props) {
         >
           <div className="text-xs text-neutral-500">Forecast</div>
           <div className="text-lg font-medium text-neutral-100 mt-1">
-            {forecastValue.toFixed(2)}
+            {hasData ? forecastValue.toFixed(2) : "N/A"}
           </div>
         </div>
 
@@ -279,8 +300,9 @@ export default function ForecastTimeline({ data }: Props) {
         >
           <div className="text-xs text-neutral-500">Confidence Interval</div>
           <div className="text-neutral-100 mt-1">
-            [{data.forecast.confidence_interval.lower.toFixed(2)},{" "}
-            {data.forecast.confidence_interval.upper.toFixed(2)}]
+            {forecastData?.confidence_interval
+              ? `[${forecastData.confidence_interval.lower.toFixed(2)}, ${forecastData.confidence_interval.upper.toFixed(2)}]`
+              : "N/A"}
           </div>
         </div>
 
@@ -290,7 +312,7 @@ export default function ForecastTimeline({ data }: Props) {
         >
           <div className="text-xs text-neutral-500">RMSE</div>
           <div className="text-neutral-100 mt-1">
-            {data.forecast.rmse.toFixed(3)}
+            {forecastData?.rmse?.toFixed(3) ?? "N/A"}
           </div>
         </div>
 
@@ -300,7 +322,7 @@ export default function ForecastTimeline({ data }: Props) {
         >
           <div className="text-xs text-neutral-500">Residual Variance</div>
           <div className="text-neutral-100 mt-1">
-            {data.forecast.residual_variance.toFixed(3)}
+            {forecastData?.residual_variance?.toFixed(3) ?? "N/A"}
           </div>
         </div>
       </div>

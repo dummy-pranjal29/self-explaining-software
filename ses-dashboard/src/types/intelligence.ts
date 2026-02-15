@@ -58,6 +58,8 @@ export interface GraphEdge {
   target: string;
   call_count: number;
   avg_duration: number;
+  stability_index: number;
+  anomaly_flag: boolean;
 }
 
 export interface GraphResponse {

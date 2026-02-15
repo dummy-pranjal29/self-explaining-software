@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
+import re
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@b_jn=h%lbcxy6yo@4pa*@9s1i6%5rfo77o+d7a4kt-*j%vq%w'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -77,15 +83,74 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ses_core.wsgi.application'
 
 
-# Database
+# Database - Uses DATABASE_URL from .env
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DATABASE_URL and 'mongodb' in DATABASE_URL:
+    # MongoDB Atlas configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'djongo',
+            'NAME': os.environ.get('MONGO_DB_NAME', 'ses'),
+            'CLIENT': {
+                'host': DATABASE_URL,
+            }
+        }
     }
-}
+elif DATABASE_URL and 'postgresql' in DATABASE_URL:
+    # PostgreSQL configuration - parse DATABASE_URL properly
+    # Format: postgresql://user:password@host:port/dbname?sslmode=require&channel_binding=require
+    
+    # Parse the connection string
+    match = re.match(
+        r'postgresql://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<dbname>\S+)',
+        DATABASE_URL
+    )
+    
+    if match:
+        # Parse query parameters (like sslmode, channel_binding)
+        query_params = {}
+        if '?' in DATABASE_URL:
+            query_string = DATABASE_URL.split('?')[1]
+            for param in query_string.split('&'):
+                if '=' in param:
+                    key, value = param.split('=', 1)
+                    query_params[key] = value
+        
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': match.group('dbname'),
+                'USER': match.group('user'),
+                'PASSWORD': match.group('password'),
+                'HOST': match.group('host'),
+                'PORT': match.group('port'),
+                'OPTIONS': {
+                    'sslmode': query_params.get('sslmode', 'require'),
+                }
+            }
+        }
+    else:
+        # Fallback to environment variables if URL parsing fails
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.environ.get('POSTGRES_DB', 'ses'),
+                'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+                'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+                'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+                'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            }
+        }
+else:
+    # Default: SQLite (for development without MongoDB)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -123,3 +188,76 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# ------------------------------------------------------------------
+# LOGGING CONFIGURATION
+# ------------------------------------------------------------------
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "ses_intelligence": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "ses_api": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": True,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}
+
+
+# ------------------------------------------------------------------
+# BACKGROUND TASK CONFIGURATION
+# ------------------------------------------------------------------
+
+# Enable background task processing (Celery-like but simple)
+SES_BACKEND_TASKS = {
+    "ENABLED": True,
+    "CELERY_BROKER_URL": os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+    "CELERY_RESULT_BACKEND": os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/1"),
+}
+
+# Task result expiry (in seconds)
+SES_TASK_RESULT_EXPIRES = 3600
+
+
+# ------------------------------------------------------------------
+# LLM CONFIGURATION
+# ------------------------------------------------------------------
+
+# OpenAI API Key
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+# LLM Model (default: gpt-4o-mini for cost efficiency)
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')

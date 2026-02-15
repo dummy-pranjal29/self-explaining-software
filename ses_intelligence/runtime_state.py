@@ -5,6 +5,8 @@ Thread-local runtime state used by the tracing middleware/decorators.
 This module also exposes small helper APIs used by Django views.
 Historically, views expected a `get_runtime_snapshots()` function, but it
 was never implemented, which breaks `python manage.py check`.
+
+Supports multi-project isolation via project_id parameter.
 """
 
 import threading
@@ -123,14 +125,27 @@ def _reconstruct_snapshots(records: List[Dict]) -> List[RuntimeSnapshot]:
     return snapshots
 
 
-def get_runtime_snapshots(limit: Optional[int] = None) -> List[RuntimeSnapshot]:
+def get_runtime_snapshots(
+    limit: Optional[int] = None, 
+    project_id: Optional[str] = None
+) -> List[RuntimeSnapshot]:
     """Return snapshots for health/intelligence computations.
 
     Preference order:
-      1) On-disk snapshots from `behavior_data/snapshots` (append-only)
+      1) On-disk snapshots from project-specific storage (append-only)
       2) A single in-memory snapshot derived from the current thread-local graph
+    
+    Args:
+        limit: Optional limit on number of snapshots to return
+        project_id: Optional project identifier for multi-project isolation.
+                   Uses 'default' if not provided.
     """
-    records = SnapshotStore.load_all()
+    project_id = project_id or "default"
+    
+    # Create SnapshotStore with project_id
+    store = SnapshotStore(project_id=project_id)
+    records = store.load_all()
+    
     if records:
         snapshots = _reconstruct_snapshots(records)
         return snapshots[-limit:] if limit else snapshots

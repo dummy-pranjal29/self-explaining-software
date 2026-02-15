@@ -3,6 +3,7 @@ import HealthGauge from "../components/HealthGauge";
 import ExecutivePanel from "../components/ExecutivePanel";
 import ForecastTimeline from "../components/ForecastTimeline/ForecastTimeline";
 import LiveArchitectureGraph from "../components/LiveArchitectureGraph";
+import ProjectSelector from "../components/ProjectSelector";
 
 import { fetchForecast, fetchGraph } from "../services/api";
 
@@ -48,8 +49,11 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">
             Self-Evolving Software
           </h1>
-          <div className="text-sm text-neutral-500">
-            Runtime Architecture Intelligence
+          <div className="flex items-center gap-4">
+            <ProjectSelector />
+            <div className="text-sm text-neutral-500">
+              Runtime Architecture Intelligence
+            </div>
           </div>
         </header>
 
@@ -77,7 +81,21 @@ export default function Dashboard() {
           {forecastData ? (
             <ForecastTimeline data={forecastData} />
           ) : (
-            <div className="text-neutral-500">Loading forecast...</div>
+            <div className="relative bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-8 space-y-8">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-sm tracking-wide text-neutral-400 uppercase">
+                    Health Forecast
+                  </h2>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Predictive trajectory with uncertainty modeling
+                  </p>
+                </div>
+              </div>
+              <div className="h-[420px] flex items-center justify-center text-neutral-500">
+                No historical data available. Start tracing to see forecasts.
+              </div>
+            </div>
           )}
         </section>
       </div>

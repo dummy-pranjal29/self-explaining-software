@@ -1,6 +1,4 @@
-print("NEW ARCHITECTURE HEALTH ENGINE LOADED")
-
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .stability_index import EdgeStabilityCalculator
 from .health_score import ArchitectureHealthScore
@@ -17,6 +15,8 @@ class ArchitectureHealthEngine:
     - Architecture health scoring
     - Health history persistence
     - Statistical forecast confidence modeling
+    
+    Supports multi-project isolation via project_id.
     """
 
     def __init__(
@@ -24,12 +24,23 @@ class ArchitectureHealthEngine:
         snapshots,
         edge_features,
         anomaly_frequency_map=None,
+        project_id: Optional[str] = None,
     ):
+        """
+        Initialize the architecture health engine.
+        
+        Args:
+            snapshots: List of behavior snapshots
+            edge_features: Edge feature matrix from FeatureExtractor
+            anomaly_frequency_map: Optional map of anomaly frequencies
+            project_id: Optional project identifier for multi-project isolation
+        """
         self.snapshots = snapshots
         self.edge_features = edge_features
         self.anomaly_frequency_map = anomaly_frequency_map or {}
+        self.project_id = project_id or "default"
 
-        self.history_store = ArchitectureHealthHistory()
+        self.history_store = ArchitectureHealthHistory(project_id=self.project_id)
 
     # --------------------------------------
     # Main Execution
@@ -102,6 +113,7 @@ class ArchitectureHealthEngine:
             "anomaly_count": anomaly_count,
             "edge_count": health_summary["edge_count"],
             "edges": stability_rows,
+            "project_id": self.project_id,
         }
 
         self.history_store.append(enriched_health_output)
@@ -123,6 +135,7 @@ class ArchitectureHealthEngine:
 
         return {
             "status": "success",
+            "project_id": self.project_id,
 
             # Core health metrics
             "architecture_health_score": architecture_health_score,

@@ -6,6 +6,8 @@ Used by:
 - ArchitectureHealthEngine
 - ArchitectureHealthTrend
 - ArchitectureHealthForecaster
+
+Supports multi-project isolation via project_id parameter.
 """
 
 from __future__ import annotations
@@ -14,16 +16,9 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-
-# ----------------------------------------------------------
-# Directory Setup
-# ----------------------------------------------------------
-
-BASE_DIR = Path(__file__).resolve().parents[2]
-HEALTH_DIR = BASE_DIR / "behavior_data" / "architecture_health"
-HEALTH_DIR.mkdir(parents=True, exist_ok=True)
+from ses_intelligence.project_storage import ProjectStorage
 
 
 # ----------------------------------------------------------
@@ -41,13 +36,21 @@ class ArchitectureHealthHistory:
         "health_score": float,
         "raw": { full_health_output_dict }
     }
+    
+    Supports multi-project isolation via project_id.
     """
 
     filename: str = "health_history.json"
+    project_id: Optional[str] = None
+
+    def __post_init__(self):
+        """Initialize storage after dataclass initialization."""
+        self.storage = ProjectStorage(self.project_id)
 
     @property
     def path(self) -> Path:
-        return HEALTH_DIR / self.filename
+        """Get the path to the health history file."""
+        return self.storage.snapshot_path
 
     # ------------------------------------------------------
 
@@ -100,12 +103,16 @@ class ArchitectureHealthHistory:
 
         record: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "project_id": self.project_id or "default",
             "health_score": float(health_score),
             "raw": health_output,
         }
 
         history.append(record)
 
+        # Ensure directory exists
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        
         self.path.write_text(
             json.dumps(history, indent=2, default=str),
             encoding="utf-8",
@@ -128,3 +135,12 @@ class ArchitectureHealthHistory:
                 scores.append(float(score))
 
         return scores
+    
+    # ------------------------------------------------------
+    # BACKWARD COMPATIBILITY
+    # ------------------------------------------------------
+    
+    @classmethod
+    def create_default(cls) -> "ArchitectureHealthHistory":
+        """Create history store for default project (backward compatibility)."""
+        return cls(project_id="default")

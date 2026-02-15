@@ -27,3 +27,13 @@ behavior_data/
 node_modules/
 ses-dashboard/node_modules/
 
+# Environment variables
+.env
+.env.local
+*.local
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+

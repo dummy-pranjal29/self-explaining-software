@@ -2,16 +2,9 @@ import json
 import random
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-
-# ------------------------------------------------------------------
-# CONFIGURATION
-# ------------------------------------------------------------------
-
-BASE_DIR = Path(__file__).resolve().parents[2]
-SNAPSHOT_DIR = BASE_DIR / "behavior_data" / "snapshots"
-SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+from ses_intelligence.project_storage import ProjectStorage
 
 
 # ------------------------------------------------------------------
@@ -25,18 +18,51 @@ class SnapshotStore:
     Snapshots are append-only.
     Deterministic structure.
     Controlled runtime entropy applied to avg_duration.
+    
+    Supports multi-project isolation via project_id parameter.
     """
 
-    @staticmethod
-    def save(snapshot) -> Path:
+    def __init__(self, project_id: Optional[str] = None):
+        """
+        Initialize SnapshotStore for a specific project.
+        
+        Args:
+            project_id: Project identifier. Uses 'default' if None.
+        """
+        self.storage = ProjectStorage(project_id)
+        self.snapshot_dir = self.storage.snapshots_dir
+    
+    @property
+    def snapshot_dir(self):
+        """Directory for snapshots (property for compatibility)."""
+        return self._snapshot_dir
+    
+    @snapshot_dir.setter
+    def snapshot_dir(self, value):
+        self._snapshot_dir = value
+    
+    def _get_snapshot_dir(self) -> Path:
+        """Get the project-scoped snapshot directory."""
+        return self.storage.snapshots_dir
+
+    def save(self, snapshot, project_id: Optional[str] = None) -> Path:
         """
         Persist snapshot.edge_signature() to disk
         with controlled runtime variability.
         """
+        
+        # Use provided project_id or fall back to storage's project_id
+        if project_id:
+            storage = ProjectStorage(project_id)
+        else:
+            storage = self.storage
+        
+        snapshot_dir = storage.snapshots_dir
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
 
         timestamp = datetime.utcnow().isoformat()
         filename = timestamp.replace(":", "-") + ".json"
-        filepath = SNAPSHOT_DIR / filename
+        filepath = snapshot_dir / filename
 
         raw_signature = snapshot.edge_signature()
 
@@ -51,7 +77,7 @@ class SnapshotStore:
             # Controlled cumulative drift
             # -----------------------------------------
 
-            previous_snapshots = SnapshotStore.load_all()
+            previous_snapshots = self.load_all(project_id=project_id or storage.project_id)
 
             if previous_snapshots:
                 last_snapshot = previous_snapshots[-1]
@@ -75,6 +101,7 @@ class SnapshotStore:
         record = {
             "snapshot_id": timestamp,
             "created_at": timestamp,
+            "project_id": project_id or storage.project_id,
             "edge_signature": serialized_signature,
         }
 
@@ -83,18 +110,46 @@ class SnapshotStore:
 
         return filepath
 
-    @staticmethod
-    def load_all() -> List[Dict]:
+    def load_all(self, project_id: Optional[str] = None) -> List[Dict]:
         """
         Load all snapshots from disk in chronological order.
+        
+        Args:
+            project_id: Optional project ID. Uses stored project_id if not provided.
         """
+        if project_id:
+            storage = ProjectStorage(project_id)
+        else:
+            storage = self.storage
+        
+        snapshot_dir = storage.snapshots_dir
+        
+        if not snapshot_dir.exists():
+            return []
+
         snapshots = []
 
-        for file in sorted(SNAPSHOT_DIR.glob("*.json")):
+        for file in sorted(snapshot_dir.glob("*.json")):
             with open(file, "r") as f:
                 snapshots.append(json.load(f))
 
         return snapshots
+    
+    # -------------------------------------------------
+    # BACKWARD COMPATIBILITY (class methods)
+    # -------------------------------------------------
+    
+    @classmethod
+    def save_global(cls, snapshot) -> Path:
+        """Save snapshot to default project (backward compatibility)."""
+        store = cls()
+        return store.save(snapshot, project_id="default")
+    
+    @classmethod
+    def load_all_global(cls) -> List[Dict]:
+        """Load all snapshots from default project (backward compatibility)."""
+        store = cls()
+        return store.load_all(project_id="default")
 
 
 # ------------------------------------------------------------------

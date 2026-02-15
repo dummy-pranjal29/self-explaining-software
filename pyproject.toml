@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ses-intelligence"
+version = "1.0.0-beta"
+description = "Runtime intelligence platform that monitors, analyzes, and explains software behavior changes in real-time"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "SES Team", email = "team@ses.dev"}
+]
+keywords = [
+    "software-intelligence",
+    "runtime-monitoring",
+    "behavior-analysis",
+    "architecture-health",
+    "forecasting",
+    "ml",
+    "observability",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: System :: Monitoring",
+]
+
+# Core dependencies (minimal)
+dependencies = [
+    "networkx>=3.0",
+    "numpy>=1.24.0",
+]
+
+# Optional dependencies
+[project.optional-dependencies]
+# Full ML features
+ml = [
+    "scikit-learn>=1.3.0",
+]
+
+# LLM features (requires API key)
+llm = [
+    "openai>=1.0.0",
+]
+
+# Django integration
+django = [
+    "django>=4.0",
+]
+
+# FastAPI integration  
+fastapi = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+]
+
+# Flask integration
+flask = [
+    "flask>=2.3.0",
+]
+
+# All optional features
+all = [
+    "ses-intelligence[ml,llm,django,fastapi,flask]",
+]
+
+# Development dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dummy-pranjal29/self-explaining-software"
+Documentation = "https://ses-intelligence.readthedocs.io"
+Repository = "https://github.com/dummy-pranjal29/self-explaining-software"
+Issues = "https://github.com/dummy-pranjal29/self-explaining-software/issues"
+
+# Console scripts
+[project.scripts]
+ses = "ses_intelligence.cli:main"
+
+[tool.setuptools]
+packages = ["ses_intelligence", "ses_intelligence.architecture_health", "ses_intelligence.behavior_change", "ses_intelligence.llm", "ses_intelligence.ml", "ses_intelligence.narrative"]
+
+[tool.setuptools.package-data]
+ses_intelligence = ["py.typed"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["ses_intelligence/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

@@ -1,0 +1,52 @@
+# Pre-commit hooks for Self-Evolving Software
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  # Python hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  # Python formatting
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        language_version: python3
+
+  # Python linting
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ["--max-line-length=100", "--ignore=E501,W503"]
+
+  # Type checking
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile=black"]
+
+  # JavaScript/TypeScript hooks
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.56.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        stages: [pre-commit]
+
+  # Git hooks
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.5.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
