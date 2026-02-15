@@ -23,3 +23,7 @@ Thumbs.db
 
 behavior_data/
 
+# Dependencies
+node_modules/
+ses-dashboard/node_modules/
+

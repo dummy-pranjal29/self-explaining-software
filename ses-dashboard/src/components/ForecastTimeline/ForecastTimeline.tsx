@@ -59,9 +59,22 @@ export default function ForecastTimeline({ data }: Props) {
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
+    // Create clip path to prevent line from crossing axes
+    svg
+      .append("defs")
+      .append("clipPath")
+      .attr("id", "chart-clip")
+      .append("rect")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight);
+
+    // Main chart group (for axes - not clipped)
     const g = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Clipped group for chart content (line)
+    const chartArea = g.append("g").attr("clip-path", "url(#chart-clip)");
 
     // 24-hour domain
     const now = new Date();
@@ -128,14 +141,15 @@ export default function ForecastTimeline({ data }: Props) {
       .style("font-size", "12px")
       .text("Last 24 Hours");
 
-    // LINE
+    // LINE (in clipped chart area)
     const line = d3
       .line<(typeof history)[0]>()
       .x((d) => xScale(d.timestamp))
       .y((d) => yScale(d.health))
       .curve(d3.curveMonotoneX);
 
-    g.append("path")
+    chartArea
+      .append("path")
       .datum(history)
       .attr("fill", "none")
       .attr("stroke", "#6366f1")

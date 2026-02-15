@@ -1,7 +1,15 @@
+// -----------------------------
+// HEALTH HISTORY
+// -----------------------------
+
 export interface HealthScore {
   timestamp: string;
   health_score: number;
 }
+
+// -----------------------------
+// FORECAST
+// -----------------------------
 
 export interface ForecastResult {
   status: string;
@@ -22,6 +30,10 @@ export interface ForecastResponse {
   forecast: ForecastResult;
 }
 
+// -----------------------------
+// HEALTH RESPONSE
+// -----------------------------
+
 export interface HealthResponse {
   timestamp: string;
   health_score?: number;
@@ -31,4 +43,25 @@ export interface HealthResponse {
   stability_index?: number;
   confidence_score?: number;
   [key: string]: unknown;
+}
+
+// -----------------------------
+// GRAPH TYPES (NEW)
+// -----------------------------
+
+export interface GraphNode {
+  id: string;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  call_count: number;
+  avg_duration: number;
+}
+
+export interface GraphResponse {
+  timestamp: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }

@@ -113,6 +113,7 @@ def api_impact(request):
 
 
 def api_graph(request):
+
     snapshot_path = os.path.join(settings.BASE_DIR, "behavior_data", "snapshots")
 
     if not os.path.exists(snapshot_path):
@@ -125,13 +126,35 @@ def api_graph(request):
     latest = os.path.join(snapshot_path, files[-1])
 
     with open(latest, "r") as f:
-        graph = json.load(f)
+        snapshot = json.load(f)
+
+    edge_signature = snapshot.get("edge_signature", {})
+
+    nodes = set()
+    edges = []
+
+    for edge_key, meta in edge_signature.items():
+
+        src, dst = edge_key.split("|")
+
+        nodes.add(src)
+        nodes.add(dst)
+
+        edges.append({
+            "source": src,
+            "target": dst,
+            "call_count": meta.get("call_count", 0),
+            "avg_duration": meta.get("avg_duration", 0),
+        })
+
+    node_list = [{"id": n} for n in nodes]
 
     return JsonResponse({
-        "timestamp": datetime.utcnow(),
-        "nodes": graph.get("nodes", []),
-        "edges": graph.get("edges", [])
+        "timestamp": datetime.utcnow().isoformat(),
+        "nodes": node_list,
+        "edges": edges
     })
+
 
 
 def api_executive(request):

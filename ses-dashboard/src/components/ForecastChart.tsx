@@ -35,19 +35,39 @@ export default function ForecastChart() {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // Create clip path to prevent line from crossing axes
+    svg
+      .append("defs")
+      .append("clipPath")
+      .attr("id", "forecast-chart-clip")
+      .append("rect")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight);
+
+    // Main chart group (for axes - not clipped)
+    const chartArea = g
+      .append("g")
+      .attr("clip-path", "url(#forecast-chart-clip)");
+
     const history = data.history.map(
-      (entry: { health_score: number }, i: number) => ({
+      (
+        entry: { health_score: number; stability_index?: number },
+        i: number,
+      ) => ({
         x: i,
         y: entry.health_score,
+        stability: entry.stability_index ?? null,
       }),
     );
 
-    const forecastPoint = {
+    const forecastPoint: { x: number; y: number; stability: null } = {
       x: history.length,
       y: data.forecast.forecast_next,
+      stability: null,
     };
 
-    const fullData = [...history, forecastPoint];
+    type DataPoint = { x: number; y: number; stability: number | null };
+    const fullData: DataPoint[] = [...history, forecastPoint];
 
     const xScale = d3
       .scaleLinear()
@@ -69,7 +89,8 @@ export default function ForecastChart() {
       .y((d) => yScale(d.y))
       .curve(d3.curveMonotoneX);
 
-    g.append("path")
+    chartArea
+      .append("path")
       .datum(history)
       .attr("fill", "none")
       .attr("stroke", "#818cf8")
@@ -77,7 +98,8 @@ export default function ForecastChart() {
       .attr("d", line);
 
     // Forecast extension (dashed)
-    g.append("path")
+    chartArea
+      .append("path")
       .datum([history[history.length - 1], forecastPoint])
       .attr("fill", "none")
       .attr("stroke", "#a5b4fc")
@@ -86,11 +108,76 @@ export default function ForecastChart() {
       .attr("d", line);
 
     // Forecast point
-    g.append("circle")
+    chartArea
+      .append("circle")
       .attr("cx", xScale(forecastPoint.x))
       .attr("cy", yScale(forecastPoint.y))
       .attr("r", 5)
       .attr("fill", "#6366f1");
+
+    // Hover overlay
+    const overlay = g
+      .append("rect")
+      .attr("width", innerWidth)
+      .attr("height", innerHeight)
+      .attr("fill", "transparent");
+
+    const focusCircle = g
+      .append("circle")
+      .attr("r", 6)
+      .attr("fill", "#fff")
+      .attr("opacity", 0);
+
+    const tooltipParent = svgRef.current?.parentElement;
+    if (!tooltipParent) return;
+
+    const tooltip = d3
+      .select(tooltipParent)
+      .append("div")
+      .style("position", "absolute")
+      .style("background", "rgba(15,15,15,0.96)")
+      .style("color", "#fff")
+      .style("padding", "12px 16px")
+      .style("border", "1px solid #222")
+      .style("border-radius", "12px")
+      .style("font-size", "12px")
+      .style("box-shadow", "0 10px 40px rgba(0,0,0,0.6)")
+      .style("pointer-events", "none")
+      .style("opacity", 0);
+
+    overlay.on("mousemove", function (event) {
+      const [mouseX] = d3.pointer(event);
+      const index = Math.round(xScale.invert(mouseX));
+
+      if (index < 0 || index >= fullData.length) return;
+
+      const d = fullData[index];
+
+      focusCircle
+        .attr("cx", xScale(d.x))
+        .attr("cy", yScale(d.y))
+        .attr("opacity", 1);
+
+      tooltip
+        .style("opacity", 1)
+        .style("left", event.pageX + 15 + "px")
+        .style("top", event.pageY - 50 + "px").html(`
+          <div style="font-weight:600;margin-bottom:6px;">
+            ${index === history.length ? "Forecast" : `Snapshot ${index + 1}`}
+          </div>
+          <div>Health: <strong>${d.y.toFixed(2)}</strong></div>
+          ${
+            d.stability !== undefined
+              ? `<div>Stability: ${d.stability !== null ? d.stability.toFixed(2) : "N/A"}</div>`
+              : ""
+          }
+        `);
+    });
+
+    overlay.on("mouseleave", function () {
+      focusCircle.attr("opacity", 0);
+      tooltip.style("opacity", 0);
+    });
   }, [data]);
 
   if (!data) {
