@@ -64,7 +64,7 @@ def behavior_diff_debug(request):
     graph = get_behavior_graph()
     new_snapshot = BehaviorSnapshot(graph)
 
-    snapshots = SnapshotStore.load_all()
+    snapshots = SnapshotStore.load_all_global()
 
     if not snapshots:
         new_snapshot.persist()
@@ -107,7 +107,7 @@ def behavior_diff_debug(request):
 # ------------------------------------------------------------
 
 def behavior_history_debug(request):
-    snapshots = SnapshotStore.load_all()
+    snapshots = SnapshotStore.load_all_global()
 
     if not snapshots:
         return JsonResponse({

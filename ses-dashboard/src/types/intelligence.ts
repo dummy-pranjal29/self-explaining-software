@@ -5,6 +5,7 @@
 export interface HealthScore {
   timestamp: string;
   health_score: number;
+  stability_index?: number;
 }
 
 // -----------------------------
@@ -34,14 +35,25 @@ export interface ForecastResponse {
 // HEALTH RESPONSE
 // -----------------------------
 
+export interface RiskDriver {
+  edge: string;
+  stability: number;
+  anomaly: boolean;
+}
+
 export interface HealthResponse {
   timestamp: string;
   health_score?: number;
   architecture_health_score?: number;
   status?: string;
   risk_label?: string;
+  health_label?: string;
   stability_index?: number;
   confidence_score?: number;
+  trend_direction?: string;
+  volatility_label?: string;
+  delta?: number;
+  top_risk_drivers?: RiskDriver[];
   [key: string]: unknown;
 }
 

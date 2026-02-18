@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ses-intelligence"
-version = "1.0.0-beta"
+version = "1.0.0b0"
 description = "Runtime intelligence platform that monitors, analyzes, and explains software behavior changes in real-time"
 readme = "README.md"
 license = {text = "MIT"}
@@ -40,41 +40,26 @@ dependencies = [
     "numpy>=1.24.0",
 ]
 
-# Optional dependencies
 [project.optional-dependencies]
-# Full ML features
 ml = [
     "scikit-learn>=1.3.0",
 ]
-
-# LLM features (requires API key)
 llm = [
     "openai>=1.0.0",
 ]
-
-# Django integration
 django = [
     "django>=4.0",
 ]
-
-# FastAPI integration  
 fastapi = [
     "fastapi>=0.100.0",
     "uvicorn>=0.23.0",
 ]
-
-# Flask integration
 flask = [
     "flask>=2.3.0",
 ]
-
-# All optional features
 all = [
     "ses-intelligence[ml,llm,django,fastapi,flask]",
 ]
-
-# Development dependencies
-[project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",

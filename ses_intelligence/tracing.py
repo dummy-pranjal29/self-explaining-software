@@ -1,7 +1,9 @@
 # ses_intelligence/tracing.py
 
+import asyncio
 import time
 from functools import wraps
+from typing import Callable
 from ses_intelligence.runtime_state import (
     get_behavior_graph,
     push_call,
@@ -10,10 +12,23 @@ from ses_intelligence.runtime_state import (
 )
 
 
-def trace_behavior(func):
+def trace_behavior(func: Callable) -> Callable:
+    """
+    Decorator to trace function behavior and build architecture graph.
+    
+    Supports both synchronous and asynchronous functions.
+    
+    Args:
+        func: The function to trace
+        
+    Returns:
+        Wrapped function that traces behavior
+    """
+    # Check if the function is async
+    is_async = asyncio.iscoroutinefunction(func)
+    
     @wraps(func)
-    def wrapper(*args, **kwargs):
-
+    async def async_wrapper(*args, **kwargs):
         # Get parent BEFORE pushing current function
         caller = get_current_caller()
         callee = func.__name__
@@ -23,33 +38,65 @@ def trace_behavior(func):
         # Push current function onto stack
         push_call(callee)
 
-        start = time.time()
-        result = func(*args, **kwargs)
-        duration = time.time() - start
+        try:
+            start = time.time()
+            result = await func(*args, **kwargs)
+            duration = time.time() - start
 
-        # Record edge if parent exists
-        if caller:
-            graph.add_call(
-                caller=caller,
-                callee=callee,
-                duration=duration
-            )
+            # Record edge if parent exists
+            if caller:
+                graph.add_call(
+                    caller=caller,
+                    callee=callee,
+                    duration=duration
+                )
 
-        pop_call()
+            print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
 
-        print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+            return result
+        finally:
+            pop_call()
 
-        return result
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        # Get parent BEFORE pushing current function
+        caller = get_current_caller()
+        callee = func.__name__
 
-    return wrapper
+        graph = get_behavior_graph()
+
+        # Push current function onto stack
+        push_call(callee)
+
+        try:
+            start = time.time()
+            result = func(*args, **kwargs)
+            duration = time.time() - start
+
+            # Record edge if parent exists
+            if caller:
+                graph.add_call(
+                    caller=caller,
+                    callee=callee,
+                    duration=duration
+                )
+
+            print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+
+            return result
+        finally:
+            pop_call()
+
+    # Return appropriate wrapper based on function type
+    return async_wrapper if is_async else sync_wrapper
 
 
 def get_edge_features():
     """Return edge features for the latest available snapshot history.
 
-    This function is used by the Django API layer.
+    This function is used by external API layers.
     """
-    # Lazy import to avoid heavy imports at Django startup.
+    # Lazy import to avoid heavy imports at startup.
     from ses_intelligence.runtime_state import get_runtime_snapshots
     from ses_intelligence.ml.features import FeatureExtractor
 

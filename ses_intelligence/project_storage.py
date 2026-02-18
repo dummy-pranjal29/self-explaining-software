@@ -93,14 +93,19 @@ class ProjectStorage:
         List all existing project IDs.
         
         Returns:
-            List of project directory names.
+            List of valid project directory names.
+            Filters out internal directories like 'architecture_health' and 'snapshots'.
         """
         if not BEHAVIOR_DATA_DIR.exists():
             return []
         
+        # Internal folders to exclude from project list
+        internal_folders = {'architecture_health', 'snapshots', '__pycache__'}
+        
         projects = []
         for item in BEHAVIOR_DATA_DIR.iterdir():
-            if item.is_dir() and not item.name.startswith('.'):
+            # Only include directories that are not internal/system folders
+            if item.is_dir() and not item.name.startswith('.') and item.name not in internal_folders:
                 projects.append(item.name)
         
         return sorted(projects)

@@ -47,4 +47,4 @@ class BehaviorSnapshot:
         """
         Persist this snapshot to disk.
         """
-        return SnapshotStore.save(self)
+        return SnapshotStore.save_global(self)

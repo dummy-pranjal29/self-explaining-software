@@ -1,39 +1,66 @@
-# Virtual Environment
-venv/
-env/
-
+# ==============================
 # Python
+# ==============================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual Environments
+venv/
+env/
+.venv/
 
 # Database
 db.sqlite3
 
 # Snapshot storage
+behavior_data/
 snapshots/
 
-# VS Code
-.vscode/
+# Coverage & Testing
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
 
-# OS files
-.DS_Store
-Thumbs.db
+# Type checking
+.mypy_cache/
 
-behavior_data/
-
-# Dependencies
-node_modules/
-ses-dashboard/node_modules/
+# Logs
+*.log
 
 # Environment variables
 .env
 .env.local
 *.local
 
-# Coverage
-.coverage
-htmlcov/
-.pytest_cache/
+# ==============================
+# Node / Frontend
+# ==============================
+node_modules/
+ses-dashboard/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
+# Vite / Cache
+.cache/
+.parcel-cache/
+
+# ==============================
+# IDE
+# ==============================
+.vscode/
+.idea/
+
+# ==============================
+# OS
+# ==============================
+.DS_Store
+Thumbs.db

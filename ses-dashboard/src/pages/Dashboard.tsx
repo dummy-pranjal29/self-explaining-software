@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import HealthGauge from "../components/HealthGauge";
 import ExecutivePanel from "../components/ExecutivePanel";
 import ForecastTimeline from "../components/ForecastTimeline/ForecastTimeline";
 import LiveArchitectureGraph from "../components/LiveArchitectureGraph";
 import ProjectSelector from "../components/ProjectSelector";
+import AIChatPanel from "../components/AIChatPanel";
 
-import { fetchForecast, fetchGraph } from "../services/api";
+import { fetchForecast, fetchGraph, setProjectId } from "../services/api";
 
 import type { ForecastResponse } from "../types/intelligence";
 import type { GraphResponse } from "../types/intelligence";
@@ -19,7 +20,16 @@ export default function Dashboard() {
 
   const [loadingGraph, setLoadingGraph] = useState(true);
 
-  useEffect(() => {
+  // Key to force refresh of health components when project changes
+  const [healthRefreshKey, setHealthRefreshKey] = useState(0);
+
+  // Function to fetch dashboard data
+  const fetchDashboardData = useCallback(() => {
+    // Reset data state
+    setForecastData(null);
+    setGraphData(null);
+    setLoadingGraph(true);
+
     // Fetch forecast
     fetchForecast()
       .then((res) => {
@@ -42,6 +52,31 @@ export default function Dashboard() {
       });
   }, []);
 
+  // Fetch data on mount - use ref to avoid lint warning
+  const mounted = useCallback(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    mounted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle project change from ProjectSelector
+  const handleProjectChange = useCallback(
+    (projectId?: string) => {
+      // Update the global project ID for API calls
+      if (projectId) {
+        setProjectId(projectId);
+      }
+      // Force refresh of health components
+      setHealthRefreshKey((prev) => prev + 1);
+      // Fetch new data
+      fetchDashboardData();
+    },
+    [fetchDashboardData],
+  );
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 px-10 py-8">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -50,7 +85,7 @@ export default function Dashboard() {
             Self-Evolving Software
           </h1>
           <div className="flex items-center gap-4">
-            <ProjectSelector />
+            <ProjectSelector onProjectChange={handleProjectChange} />
             <div className="text-sm text-neutral-500">
               Runtime Architecture Intelligence
             </div>
@@ -59,8 +94,8 @@ export default function Dashboard() {
 
         {/* Health Overview */}
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <HealthGauge />
-          <ExecutivePanel />
+          <HealthGauge key={healthRefreshKey} />
+          <ExecutivePanel key={healthRefreshKey + "exec"} />
         </section>
 
         {/* Live Architecture Graph */}
@@ -69,10 +104,19 @@ export default function Dashboard() {
             <div className="text-neutral-500">
               Loading architecture graph...
             </div>
-          ) : graphData ? (
+          ) : graphData && graphData.nodes && graphData.nodes.length > 0 ? (
             <LiveArchitectureGraph data={graphData} />
           ) : (
-            <div className="text-red-500">Failed to load graph.</div>
+            <div className="bg-slate-900 rounded-2xl p-8 shadow-xl border border-slate-800">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-white text-lg font-semibold">
+                  Live Architecture Graph
+                </h2>
+              </div>
+              <div className="h-[500px] flex items-center justify-center text-neutral-500">
+                No architecture data available. Start tracing to see the graph.
+              </div>
+            </div>
           )}
         </section>
 
@@ -92,12 +136,15 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              <div className="h-[420px] flex items-center justify-center text-neutral-500">
+              <div className="h-[280px] flex items-center justify-center text-neutral-500">
                 No historical data available. Start tracing to see forecasts.
               </div>
             </div>
           )}
         </section>
+
+        {/* AI Chat Panel */}
+        <AIChatPanel />
       </div>
     </div>
   );

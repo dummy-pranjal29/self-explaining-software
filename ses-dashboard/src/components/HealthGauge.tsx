@@ -161,6 +161,74 @@ export default function HealthGauge() {
           />
         </div>
       </div>
+
+      {/* Enhanced Health Meta Information */}
+      <div className="mt-6 pt-6 border-t border-neutral-800 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-neutral-500 mb-1">Status</p>
+            <p className="text-sm font-medium" style={{ color }}>
+              {data.health_label ?? data.risk_label ?? "Unknown"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 mb-1">Trend</p>
+            <p className="text-sm font-medium">
+              {data.trend_direction === "improving" && "↑ Improving"}
+              {data.trend_direction === "slightly_improving" &&
+                "↗ Slightly Improving"}
+              {data.trend_direction === "flat" && "→ Stable"}
+              {data.trend_direction === "slightly_declining" &&
+                "↘ Slightly Declining"}
+              {data.trend_direction === "declining" && "↓ Declining"}
+              {!data.trend_direction && "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 mb-1">Volatility</p>
+            <p className="text-sm font-medium">
+              {data.volatility_label === "low" && "Low"}
+              {data.volatility_label === "medium" && "Medium"}
+              {data.volatility_label === "high" && "High"}
+              {!data.volatility_label && "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-500 mb-1">Delta</p>
+            <p
+              className={`text-sm font-medium ${data.delta && data.delta > 0 ? "text-green-400" : data.delta && data.delta < 0 ? "text-red-400" : "text-neutral-400"}`}
+            >
+              {data.delta !== undefined
+                ? data.delta >= 0
+                  ? `+${data.delta.toFixed(1)}`
+                  : data.delta.toFixed(1)
+                : "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Top Risk Drivers */}
+        {data.top_risk_drivers && data.top_risk_drivers.length > 0 && (
+          <div>
+            <p className="text-xs text-neutral-500 mb-2">Top Risk Drivers</p>
+            <div className="space-y-2">
+              {data.top_risk_drivers.map((driver, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between bg-neutral-800/50 rounded-lg px-3 py-2"
+                >
+                  <span className="text-xs text-neutral-300 font-mono">
+                    {driver.edge}
+                  </span>
+                  <span className="text-xs text-red-400">
+                    {(driver.stability * 100).toFixed(0)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

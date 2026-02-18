@@ -75,7 +75,7 @@ class IntelligencePipeline:
 
     def run_intelligence(self):
 
-        raw_snapshots = SnapshotStore.load_all()
+        raw_snapshots = SnapshotStore.load_all_global()
 
         if not raw_snapshots or len(raw_snapshots) < 3:
             return {

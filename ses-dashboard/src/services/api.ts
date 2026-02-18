@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// Use relative path - Vite proxy will forward to Django backend
 const API = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/",
+  baseURL: "/api",
 });
 
 // Default project ID - could be changed by user in the UI
@@ -31,3 +32,18 @@ export const createProject = (name: string) =>
   API.post("v1/projects/create/", { name });
 export const deleteProject = (projectId: string) =>
   API.delete(`v1/projects/delete/${projectId}/`);
+
+// AI Chat endpoint
+export interface ChatRequest {
+  question: string;
+}
+
+export interface ChatResponse {
+  status: "success" | "error";
+  response?: string;
+  message?: string;
+  question: string;
+}
+
+export const sendChatMessage = (question: string) =>
+  API.post<ChatResponse>("v1/chat/", { question });

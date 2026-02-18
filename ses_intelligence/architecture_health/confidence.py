@@ -1,8 +1,24 @@
 import os
 import json
 import numpy as np
-from typing import List, Dict
-from sklearn.linear_model import LinearRegression
+from typing import List, Dict, Optional
+
+# Lazy import for sklearn - it's optional
+_sklearn_available = None
+_LinearRegression = None
+
+
+def _check_sklearn():
+    """Lazy check for sklearn availability."""
+    global _sklearn_available, _LinearRegression
+    if _sklearn_available is None:
+        try:
+            from sklearn.linear_model import LinearRegression
+            _LinearRegression = LinearRegression
+            _sklearn_available = True
+        except ImportError:
+            _sklearn_available = False
+    return _sklearn_available
 
 
 class ForecastConfidenceEngine:
@@ -75,12 +91,18 @@ class ForecastConfidenceEngine:
 
     def rolling_regression(self, values: List[float]):
 
+        if not _check_sklearn():
+            raise ImportError(
+                "scikit-learn is required for forecasting. "
+                "Install with: pip install scikit-learn"
+            )
+
         window = values[-self.window_size:]
 
         X = np.arange(len(window)).reshape(-1, 1)
         y = np.array(window)
 
-        model = LinearRegression()
+        model = _LinearRegression()
         model.fit(X, y)
 
         predictions = model.predict(X)
@@ -100,12 +122,18 @@ class ForecastConfidenceEngine:
 
     def forecast_next(self, values):
 
+        if not _check_sklearn():
+            raise ImportError(
+                "scikit-learn is required for forecasting. "
+                "Install with: pip install scikit-learn"
+            )
+
         window = values[-self.window_size:]
 
         X = np.arange(len(window)).reshape(-1, 1)
         y = np.array(window)
 
-        model = LinearRegression()
+        model = _LinearRegression()
         model.fit(X, y)
 
         next_x = np.array([[len(window)]])
@@ -171,6 +199,9 @@ class ForecastConfidenceEngine:
     # -------------------------------------------------
 
     def _compute(self, values):
+
+        if not _check_sklearn():
+            return {"status": "error", "message": "scikit-learn not installed"}
 
         if len(values) < self.window_size:
             return {"status": "insufficient_data"}

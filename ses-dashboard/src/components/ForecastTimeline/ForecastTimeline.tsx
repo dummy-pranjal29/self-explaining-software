@@ -26,12 +26,12 @@ export default function ForecastTimeline({ data }: Props) {
       stability: v.stability_index ?? null,
     })) ?? [];
 
-  // Handle missing or error forecast data
-  const forecastData =
-    data?.forecast?.status === "success" ? data.forecast : null;
+  // Handle missing or error forecast data - show data even if forecast fails
+  const forecastData = data?.forecast;
+  const hasHistory = history.length > 0;
 
   const lastActual = history[history.length - 1]?.health ?? 0;
-  const forecastValue = forecastData?.forecast_next ?? 0;
+  const forecastValue = forecastData?.forecast_next ?? lastActual;
   const delta = forecastValue - lastActual;
 
   const slopeIcon = delta > 0.05 ? "↑" : delta < -0.05 ? "↓" : "→";
@@ -50,10 +50,11 @@ export default function ForecastTimeline({ data }: Props) {
         ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
         : "text-red-400 border-red-400/30 bg-red-400/10";
 
-  const hasData = forecastData && history.length > 0;
+  // Show chart if we have history data
+  const hasData = hasHistory;
 
   useEffect(() => {
-    if (!svgRef.current || !hasData) return;
+    if (!svgRef.current || !hasData || history.length === 0) return;
 
     const svgEl = svgRef.current;
     const svg = d3.select(svgEl);
@@ -83,20 +84,28 @@ export default function ForecastTimeline({ data }: Props) {
     // Clipped group for chart content (line)
     const chartArea = g.append("g").attr("clip-path", "url(#chart-clip)");
 
-    // 24-hour domain
-    const now = new Date();
-    const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // Dynamic time domain based on actual data
+    const timestamps = history.map((d) => d.timestamp);
+    const minTime = d3.min(timestamps) || new Date();
+    const maxTime = d3.max(timestamps) || new Date();
+
+    // Add some padding to the time domain
+    const timePadding =
+      (maxTime.getTime() - minTime.getTime()) * 0.1 || 3600000; // 10% padding or 1 hour
+    const startTime = new Date(minTime.getTime() - timePadding);
+    const endTime = new Date(maxTime.getTime() + timePadding);
 
     const xScale = d3
       .scaleTime()
-      .domain([start24h, now])
+      .domain([startTime, endTime])
       .range([0, innerWidth]);
 
     const yMin = d3.min(history, (d) => d.health) ?? 0;
     const yMax = d3.max(history, (d) => d.health) ?? 100;
+    const yPadding = Math.max(5, (yMax - yMin) * 0.1);
     const yScale = d3
       .scaleLinear()
-      .domain([yMin - 1, yMax + 1])
+      .domain([Math.max(0, yMin - yPadding), Math.min(100, yMax + yPadding)])
       .range([innerHeight, 0]);
 
     // GRID
@@ -127,7 +136,7 @@ export default function ForecastTimeline({ data }: Props) {
       .style("font-size", "12px")
       .text("Architecture Health");
 
-    // X AXIS (24h clean)
+    // X AXIS - dynamic based on data
     g.append("g")
       .attr("transform", `translate(0, ${innerHeight})`)
       .call(
@@ -146,11 +155,11 @@ export default function ForecastTimeline({ data }: Props) {
       .attr("fill", "#666")
       .style("text-anchor", "middle")
       .style("font-size", "12px")
-      .text("Last 24 Hours");
+      .text("Timeline");
 
     // LINE (in clipped chart area)
     const line = d3
-      .line<(typeof history)[0]>()
+      .line<MappedHistoryItem>()
       .x((d) => xScale(d.timestamp))
       .y((d) => yScale(d.health))
       .curve(d3.curveMonotoneX);
@@ -163,6 +172,19 @@ export default function ForecastTimeline({ data }: Props) {
       .attr("stroke-width", 3)
       .attr("d", line);
 
+    // Add dots for each data point
+    chartArea
+      .selectAll("circle")
+      .data(history)
+      .enter()
+      .append("circle")
+      .attr("cx", (d) => xScale(d.timestamp))
+      .attr("cy", (d) => yScale(d.health))
+      .attr("r", 4)
+      .attr("fill", "#6366f1")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1);
+
     // HOVER
     const overlay = g
       .append("rect")
@@ -172,8 +194,10 @@ export default function ForecastTimeline({ data }: Props) {
 
     const focusCircle = g
       .append("circle")
-      .attr("r", 6)
+      .attr("r", 8)
       .attr("fill", "#fff")
+      .attr("stroke", "#6366f1")
+      .attr("stroke-width", 2)
       .attr("opacity", 0);
 
     const tooltip = d3
@@ -211,7 +235,7 @@ export default function ForecastTimeline({ data }: Props) {
         .style("left", event.pageX + 15 + "px")
         .style("top", event.pageY - 50 + "px").html(`
           <div style="font-weight:600;margin-bottom:6px;">
-            ${d3.timeFormat("%Y-%m-%d %H:%M")(closest.timestamp)}
+            ${d3.timeFormat("%Y-%m-%d %H:%M:%S")(closest.timestamp)}
           </div>
           <div>Health: <strong>${closest.health.toFixed(2)}</strong></div>
           <div>Stability: ${
@@ -226,7 +250,12 @@ export default function ForecastTimeline({ data }: Props) {
       focusCircle.attr("opacity", 0);
       tooltip.style("opacity", 0);
     });
-  }, [data]);
+  }, [data, hasData, history]);
+
+  // Show forecast info even if status is not "success"
+  const showForecastInfo =
+    forecastData &&
+    (forecastData.status === "success" || forecastData.status === "error");
 
   return (
     <div className="relative bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-8 space-y-8">
@@ -246,7 +275,7 @@ export default function ForecastTimeline({ data }: Props) {
             title="Model confidence based on residual variance and forecast error."
           >
             Confidence{" "}
-            {forecastData
+            {forecastData?.confidence_score
               ? `${(forecastData.confidence_score * 100).toFixed(1)}%`
               : "N/A"}
           </span>
@@ -290,7 +319,7 @@ export default function ForecastTimeline({ data }: Props) {
         >
           <div className="text-xs text-neutral-500">Forecast</div>
           <div className="text-lg font-medium text-neutral-100 mt-1">
-            {hasData ? forecastValue.toFixed(2) : "N/A"}
+            {showForecastInfo ? forecastValue.toFixed(2) : "N/A"}
           </div>
         </div>
 

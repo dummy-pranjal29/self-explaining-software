@@ -130,6 +130,66 @@ class ArchitectureHealthEngine:
         confidence_output = confidence_engine.run()
 
         # -----------------------------
+        # Determine Health Status Label
+        # -----------------------------
+        if architecture_health_score >= 80:
+            health_label = "Stable"
+        elif architecture_health_score >= 60:
+            health_label = "Moderate"
+        elif architecture_health_score >= 40:
+            health_label = "Degrading"
+        else:
+            health_label = "Critical"
+        
+        # Determine trend direction (from forecast intelligence)
+        trend_direction = confidence_output.get("trend", "flat")
+        if isinstance(trend_direction, (int, float)):
+            if trend_direction > 2:
+                trend_direction = "improving"
+            elif trend_direction > 0:
+                trend_direction = "slightly_improving"
+            elif trend_direction == 0:
+                trend_direction = "flat"
+            elif trend_direction > -2:
+                trend_direction = "slightly_declining"
+            else:
+                trend_direction = "declining"
+        
+        # Determine volatility label
+        volatility_label = confidence_output.get("volatility", "medium")
+        
+        # Get top risk drivers (highest anomaly edges)
+        top_risk_drivers = []
+        if stability_rows:
+            # Sort by anomaly flag and lowest stability
+            sorted_edges = sorted(
+                stability_rows,
+                key=lambda x: (
+                    0 if x.get("anomaly_flag") else 1,
+                    x.get("stability_index", 1)
+                )
+            )
+            for edge in sorted_edges[:2]:
+                if edge.get("anomaly_flag") or edge.get("stability_index", 1) < 0.8:
+                    driver = {
+                        "edge": f"{edge.get('source', '?')} → {edge.get('target', '?')}",
+                        "stability": edge.get("stability_index", 0),
+                        "anomaly": edge.get("anomaly_flag", False)
+                    }
+                    top_risk_drivers.append(driver)
+        
+        # Calculate delta from last snapshot
+        delta = 0
+        try:
+            history = self.history_store.get_history()
+            if len(history) >= 2:
+                last_score = history[-1].get("architecture_health_score", 0)
+                prev_score = history[-2].get("architecture_health_score", 0)
+                delta = last_score - prev_score
+        except Exception:
+            pass
+
+        # -----------------------------
         # Final Engine Output
         # -----------------------------
 
@@ -139,7 +199,20 @@ class ArchitectureHealthEngine:
 
             # Core health metrics
             "architecture_health_score": architecture_health_score,
+            "health_score": architecture_health_score,
             "edge_count": health_summary["edge_count"],
+
+            # Health Status
+            "health_label": health_label,
+            "risk_label": health_label.upper(),
+            
+            # Trend & Volatility
+            "trend_direction": trend_direction,
+            "volatility_label": volatility_label,
+            "delta": delta,
+            
+            # Top Risk Drivers
+            "top_risk_drivers": top_risk_drivers,
 
             # Stability metrics
             "stability_index": avg_stability,

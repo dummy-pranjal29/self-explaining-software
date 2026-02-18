@@ -21,10 +21,7 @@ Quick Start:
 For more details, see the documentation.
 """
 
-__version__ = "1.0.0-beta"
-
-# CLI
-from .cli import main as cli_main
+__version__ = "1.0.0b0"
 
 # Public API exports
 from .tracing import trace_behavior, get_edge_features
@@ -40,6 +37,13 @@ from .config import (
     is_llm_enabled,
 )
 from .llm import LLMService, get_llm_service
+
+
+def cli_main():
+    """CLI entry point - imported lazily to avoid circular imports."""
+    from .cli import main
+    return main()
+
 
 __all__ = [
     # Version

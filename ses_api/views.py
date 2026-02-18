@@ -4,12 +4,14 @@ import logging
 import re
 from django.http import JsonResponse
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 from ses_intelligence.architecture_health.engine import ArchitectureHealthEngine
 from ses_intelligence.architecture_health.confidence import ForecastConfidenceEngine
 from ses_intelligence.runtime_state import get_runtime_snapshots
 from ses_intelligence.tracing import get_edge_features
 from ses_intelligence.project_storage import ProjectStorage
+
 
 logger = logging.getLogger(__name__)
 
@@ -188,12 +190,21 @@ def api_forecast(request):
                         entry.get("raw", {}).get("architecture_health_score")
                     )
 
+                    # Get stability_index from entry or compute from raw data
+                    stability_index = (
+                        entry.get("stability_index") or
+                        entry.get("raw", {}).get("stability_index") or
+                        entry.get("raw", {}).get("stability", {}).get("index") or
+                        None
+                    )
+
                     timestamp = entry.get("timestamp")
 
                     if health_score is not None and timestamp:
                         history.append({
                             "timestamp": timestamp,
-                            "health_score": health_score
+                            "health_score": health_score,
+                            "stability_index": stability_index
                         })
 
     except Exception:
@@ -304,15 +315,82 @@ def api_graph(request):
 def api_executive(request):
     """Get executive summary for a project."""
     project_id = get_project_id_from_request(request)
+    
+    # Get health data from the engine
+    snapshots = get_runtime_snapshots()
+    edge_features = get_edge_features()
+    
+    engine = ArchitectureHealthEngine(
+        snapshots=snapshots,
+        edge_features=edge_features,
+        project_id=project_id,
+    )
+    
+    health_result = engine.compute()
+    health_score = health_result.get("health_score", 50)
+    
+    # Get forecast for trend
+    try:
+        forecast_result = _compute_forecast_from_history(project_id)
+        trend_value = forecast_result.get("trend", 0)
+        # Ensure trend is a number for comparison
+        trend = float(trend_value) if isinstance(trend_value, (int, float)) else 0
+    except Exception:
+        trend = 0
+    
+    # Count high-risk edges
+    risk_count = 0
+    edges = health_result.get("edges", [])
+    for edge in edges:
+        if edge.get("anomaly_flag", False):
+            risk_count += 1
+    
+    # Get historical scores for trend analysis
+    historical_scores = []
+    try:
+        from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
+        history = ArchitectureHealthHistory(project_id=project_id)
+        historical_scores = history.get_health_scores()
+    except Exception:
+        pass
+    
+    # Calculate trend slope
+    trend_slope = 0
+    if len(historical_scores) >= 2:
+        n = len(historical_scores)
+        sum_x = sum(range(n))
+        sum_y = sum(historical_scores)
+        sum_xy = sum(i * score for i, score in enumerate(historical_scores))
+        sum_x2 = sum(i * i for i in range(n))
+        denominator = n * sum_x2 - sum_x * sum_x
+        if denominator != 0:
+            trend_slope = (n * sum_xy - sum_x * sum_y) / denominator
+    
+    # Generate dynamic summary using narrative engine
+    from ses_intelligence.narrative.executive import generate_executive_summary
+    
+    forecast_text = "Forecast indicates stable performance." if trend >= 0 else "Forecast indicates potential degradation."
+    summary = generate_executive_summary(
+        health_score=health_score,
+        trend=trend_slope,
+        risk_count=risk_count,
+        forecast_text=forecast_text
+    )
+    
+    # Get risk analysis and forecast data
     anomalies = load_json_for_project(project_id, "risk_output.json")
     forecast = load_json_for_project(project_id, "forecast_output.json")
 
     return JsonResponse({
         "timestamp": datetime.utcnow().isoformat(),
         "project_id": project_id,
-        "summary": "Architecture shows predictive degradation signals.",
+        "summary": summary,
+        "health_score": health_score,
+        "trend_slope": trend_slope,
+        "risk_count": risk_count,
         "forecast_outlook": forecast,
-        "risk_analysis": anomalies
+        "risk_analysis": anomalies,
+        "historical_scores": historical_scores[-10:] if historical_scores else []
     })
 
 
@@ -434,6 +512,7 @@ def api_project_delete(request, project_id):
 # LLM CHAT ENDPOINT
 # ----------------------------------------------------------
 
+@csrf_exempt
 def api_chat(request):
     """
     LLM-powered chat endpoint for conversational intelligence.

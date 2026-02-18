@@ -1,12 +1,33 @@
 import json
 import os
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.exceptions import NotFittedError
 from ses_intelligence.architecture_health.history import (
     ArchitectureHealthHistory
 )
+
+# Lazy imports for sklearn - it's optional
+_sklearn_available = None
+_LogisticRegression = None
+_StandardScaler = None
+_NotFittedError = None
+
+
+def _check_sklearn():
+    """Lazy check for sklearn availability."""
+    global _sklearn_available, _LogisticRegression, _StandardScaler, _NotFittedError
+    if _sklearn_available is None:
+        try:
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.exceptions import NotFittedError
+            _LogisticRegression = LogisticRegression
+            _StandardScaler = StandardScaler
+            _NotFittedError = NotFittedError
+            _sklearn_available = True
+        except ImportError:
+            _sklearn_available = False
+    return _sklearn_available
+
 
 # ==========================================================
 # EDGE-LEVEL RISK FORECASTER
@@ -22,12 +43,19 @@ class RiskForecaster:
     """
 
     def __init__(self):
-        self.model = LogisticRegression(
+        if not _check_sklearn():
+            self.model = None
+            self.scaler = None
+            self.trained = False
+            self.class_balance_warning = False
+            return
+            
+        self.model = _LogisticRegression(
             solver="liblinear",
             max_iter=200,
             random_state=42
         )
-        self.scaler = StandardScaler()
+        self.scaler = _StandardScaler()
         self.trained = False
         self.class_balance_warning = False
 
@@ -36,6 +64,12 @@ class RiskForecaster:
     # --------------------------------------------------
 
     def train(self, feature_matrix, labels):
+
+        if not _check_sklearn():
+            return {
+                "status": "error",
+                "message": "scikit-learn not installed. Install with: pip install scikit-learn"
+            }
 
         if feature_matrix is None or labels is None:
             self.trained = False
@@ -97,7 +131,7 @@ class RiskForecaster:
 
     def predict(self, feature_matrix):
 
-        if not self.trained:
+        if not self.trained or not _check_sklearn():
             return {
                 "status": "model_not_trained",
                 "probabilities": [0.0 for _ in feature_matrix]
@@ -113,7 +147,7 @@ class RiskForecaster:
                 "probabilities": [float(p[1]) for p in probs]
             }
 
-        except NotFittedError:
+        except _NotFittedError:
             return {
                 "status": "model_not_fitted_error",
                 "probabilities": [0.0 for _ in feature_matrix]
@@ -294,6 +328,7 @@ class ArchitectureHealthForecaster:
 
         return {
             "status": "forecast_generated",
+            "direction": trend_signal,
             "current_health": float(current_health),
             "long_term_slope": float(long_term_slope),
             "short_term_slope": float(short_term_slope),
