@@ -1,1 +1,1 @@
-web: gunicorn ses_core.wsgi --bind 0.0.0.0:$PORT
+web: gunicorn ses_intelligence.web.wsgi --bind 0.0.0.0:$PORT
