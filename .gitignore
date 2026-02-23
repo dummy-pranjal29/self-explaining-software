@@ -7,9 +7,11 @@ __pycache__/
 *.pyd
 *.so
 *.egg-info/
+ses_intelligence.egg-info/
 build/
 dist/
 .eggs/
+ses_intelligence-1.0.0b1/
 
 # Virtual Environments
 venv/
@@ -52,6 +54,10 @@ yarn-error.log*
 # Vite / Cache
 .cache/
 .parcel-cache/
+
+# Built frontend files (served by Django in production)
+ses-dashboard/dist/
+staticfiles/
 
 # ==============================
 # IDE

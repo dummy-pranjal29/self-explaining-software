@@ -504,7 +504,7 @@ A high-level summary designed for stakeholders, showing key metrics and recommen
 
 #### AI Chat
 
-![AI Chat](<./images/Screenshot%20(101)%20-%20AIChat.png>)
+![AI Chat](./images/ai-chat.png)
 
 The AI Chat feature allows you to ask questions in natural language about your application's architecture. Powered by LLMs, it can explain health scores, suggest improvements, and help you understand complex architectural patterns.
 

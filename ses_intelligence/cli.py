@@ -88,6 +88,25 @@ Examples:
     # doctor command
     doctor_parser = subparsers.add_parser("doctor", help="Run diagnostics and show system status")
     
+    # serve command
+    serve_parser = subparsers.add_parser("serve", help="Start the SES Intelligence web dashboard")
+    serve_parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind to (default: 0.0.0.0)"
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind to (default: 8000)"
+    )
+    serve_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Don't open browser automatically"
+    )
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -107,6 +126,8 @@ Examples:
         cmd_status(args)
     elif args.command == "doctor":
         cmd_doctor(args)
+    elif args.command == "serve":
+        cmd_serve(args)
     else:
         parser.print_help()
 
@@ -258,6 +279,28 @@ def cmd_doctor(args):
         print(f"   Model: {config.llm_model}")
     
     print("\n" + "=" * 50)
+
+
+def cmd_serve(args):
+    """Start the SES Intelligence web dashboard server."""
+    from ses_intelligence.web.server import run_server
+    
+    # Determine whether to open browser
+    open_browser = not args.no_browser
+    
+    print("=" * 50)
+    print("Starting SES Intelligence Dashboard")
+    print("=" * 50)
+    print(f"Server will be available at: http://{args.host}:{args.port}")
+    if open_browser:
+        print("Browser will open automatically...")
+    print("=" * 50)
+    
+    run_server(
+        host=args.host,
+        port=args.port,
+        open_browser=open_browser
+    )
 
 
 if __name__ == "__main__":

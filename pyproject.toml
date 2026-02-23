@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ses-intelligence"
-version = "1.0.0b0"
+version = "1.0.0b1"
 description = "Runtime intelligence platform that monitors, analyzes, and explains software behavior changes in real-time"
 readme = "README.md"
 license = {text = "MIT"}
@@ -38,6 +38,8 @@ classifiers = [
 dependencies = [
     "networkx>=3.0",
     "numpy>=1.24.0",
+    "django>=4.0",
+    "whitenoise>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -79,10 +81,10 @@ Issues = "https://github.com/dummy-pranjal29/self-explaining-software/issues"
 ses = "ses_intelligence.cli:main"
 
 [tool.setuptools]
-packages = ["ses_intelligence", "ses_intelligence.architecture_health", "ses_intelligence.behavior_change", "ses_intelligence.llm", "ses_intelligence.ml", "ses_intelligence.narrative"]
+packages = ["ses_intelligence", "ses_intelligence.architecture_health", "ses_intelligence.behavior_change", "ses_intelligence.llm", "ses_intelligence.ml", "ses_intelligence.narrative", "ses_intelligence.web"]
 
 [tool.setuptools.package-data]
-ses_intelligence = ["py.typed"]
+ses_intelligence = ["py.typed", "web/static/**/*"]
 
 [tool.black]
 line-length = 88

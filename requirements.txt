@@ -1,0 +1,23 @@
+# Django and core dependencies
+django>=4.0
+djangorestframework>=3.14.0
+python-dotenv>=1.0.0
+gunicorn>=21.0.0
+whitenoise>=6.0.0
+
+# SES Intelligence Core Dependencies
+networkx>=3.0
+numpy>=1.24.0
+
+# Optional: LLM support
+openai>=1.0.0
+
+# Optional: ML support  
+scikit-learn>=1.3.0
+
+# Optional: FastAPI support
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Optional: Flask support
+flask>=2.3.0
