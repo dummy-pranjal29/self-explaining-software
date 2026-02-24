@@ -2,33 +2,2314 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/static/vite.svg" />
-
-    <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SES Intelligence | Architecture Health Dashboard</title>
 
-    <!-- JetBrains Mono Font (Developer-grade) -->
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
 
-    <title>SELF-EVOLVING SOFTWARE</title>
-    <script
-      type="module"
-      crossorigin
-      src="/static/assets/index-3AgqyxZQ.js"
-    ></script>
-    <link
-      rel="stylesheet"
-      crossorigin
-      href="/static/assets/index-DCpCRI0K.css"
-    />
+    <style>
+      /* ============================================
+           SES Intelligence - Premium Dashboard
+           Apple-grade design system
+           ============================================ */
+
+      :root {
+        /* Color System - Health-focused */
+        --bg-primary: #0a0a0b;
+        --bg-secondary: #111113;
+        --bg-tertiary: #18181b;
+        --bg-card: #1c1c1f;
+        --bg-card-hover: #242428;
+
+        --border-subtle: rgba(255, 255, 255, 0.06);
+        --border-default: rgba(255, 255, 255, 0.1);
+
+        --text-primary: #fafafa;
+        --text-secondary: #a1a1aa;
+        --text-tertiary: #71717a;
+
+        /* Health colors */
+        --health-excellent: #10b981;
+        --health-good: #22c55e;
+        --health-warning: #eab308;
+        --health-critical: #ef4444;
+
+        /* Accent */
+        --accent-primary: #3b82f6;
+        --accent-muted: rgba(59, 130, 246, 0.15);
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-md:
+          0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+        --shadow-lg:
+          0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+        --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.1);
+
+        /* Spacing */
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+
+        /* Transitions */
+        --transition-fast: 150ms ease;
+        --transition-normal: 250ms ease;
+        --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      /* Dark mode default (can add light mode later) */
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg-primary: #fafafa;
+          --bg-secondary: #f4f4f5;
+          --bg-tertiary: #e4e4e7;
+          --bg-card: #ffffff;
+          --bg-card-hover: #fafafa;
+
+          --border-subtle: rgba(0, 0, 0, 0.04);
+          --border-default: rgba(0, 0, 0, 0.08);
+
+          --text-primary: #18181b;
+          --text-secondary: #52525b;
+          --text-tertiary: #a1a1aa;
+
+          --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+          --shadow-md:
+            0 4px 6px -1px rgba(0, 0, 0, 0.08),
+            0 2px 4px -2px rgba(0, 0, 0, 0.04);
+          --shadow-lg:
+            0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+      }
+
+      /* Reset */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        font-size: 16px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      /* ============================================
+           Layout
+           ============================================ */
+
+      .app-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      /* Header */
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 11, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 0 24px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+
+      .logo-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--health-excellent), #059669);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .logo-icon svg {
+        width: 18px;
+        height: 18px;
+        color: white;
+      }
+
+      .nav-tabs {
+        display: flex;
+        gap: 4px;
+        margin-left: 32px;
+      }
+
+      .nav-tab {
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+      }
+
+      .nav-tab:hover {
+        color: var(--text-secondary);
+        background: var(--bg-tertiary);
+      }
+
+      .nav-tab.active {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .project-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+      }
+
+      .project-selector:hover {
+        border-color: var(--accent-primary);
+      }
+
+      .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--health-excellent);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        padding: 32px 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      /* Dashboard Grid */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 20px;
+      }
+
+      /* ============================================
+           Cards
+           ============================================ */
+
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        transition: all var(--transition-normal);
+      }
+
+      .card:hover {
+        border-color: var(--border-default);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .card-title {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+      }
+
+      .card-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-muted);
+        border-radius: var(--radius-md);
+        color: var(--accent-primary);
+      }
+
+      /* ============================================
+           Health Score Display
+           ============================================ */
+
+      .health-score-card {
+        grid-column: span 4;
+        position: relative;
+        overflow: hidden;
+      }
+
+      @media (max-width: 1024px) {
+        .health-score-card {
+          grid-column: span 6;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .health-score-card {
+          grid-column: span 12;
+        }
+      }
+
+      .health-gauge {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        margin: 20px auto;
+      }
+
+      .health-gauge-bg {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(
+          from 180deg,
+          var(--bg-tertiary) 0deg,
+          var(--bg-tertiary) 180deg
+        );
+      }
+
+      .health-gauge-fill {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(
+          from 180deg,
+          var(--health-color, var(--health-excellent)) 0deg,
+          var(--health-color, var(--health-excellent)) var(--health-deg, 0deg),
+          transparent var(--health-deg, 0deg),
+          transparent 180deg
+        );
+        transition: all var(--transition-slow);
+      }
+
+      .health-gauge-inner {
+        position: absolute;
+        inset: 16px;
+        background: var(--bg-card);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .health-score-value {
+        font-size: 48px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        color: var(--health-color, var(--health-excellent));
+        transition: color var(--transition-normal);
+      }
+
+      .health-score-label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        margin-top: 4px;
+      }
+
+      .health-status {
+        text-align: center;
+        margin-top: 16px;
+      }
+
+      .health-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--health-excellent);
+      }
+
+      .health-status-badge.warning {
+        background: rgba(234, 179, 8, 0.1);
+        color: var(--health-warning);
+      }
+
+      .health-status-badge.critical {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--health-critical);
+      }
+
+      /* ============================================
+           Metrics Cards
+           ============================================ */
+
+      .metric-card {
+        grid-column: span 4;
+      }
+
+      @media (max-width: 1024px) {
+        .metric-card {
+          grid-column: span 6;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .metric-card {
+          grid-column: span 12;
+        }
+      }
+
+      .metric-value {
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin: 16px 0 8px;
+      }
+
+      .metric-label {
+        font-size: 13px;
+        color: var(--text-tertiary);
+      }
+
+      .metric-trend {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 12px;
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+
+      .metric-trend.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--health-excellent);
+      }
+
+      .metric-trend.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--health-critical);
+      }
+
+      .metric-trend.neutral {
+        background: var(--bg-tertiary);
+        color: var(--text-tertiary);
+      }
+
+      /* ============================================
+           Executive Summary
+           ============================================ */
+
+      .executive-card {
+        grid-column: span 8;
+      }
+
+      @media (max-width: 1024px) {
+        .executive-card {
+          grid-column: span 12;
+        }
+      }
+
+      .executive-summary {
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--text-secondary);
+      }
+
+      .executive-summary p {
+        margin-bottom: 16px;
+      }
+
+      .executive-summary strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      /* ============================================
+           Chart Area
+           ============================================ */
+
+      .chart-card {
+        grid-column: span 12;
+      }
+
+      .chart-container {
+        height: 280px;
+        margin-top: 16px;
+        position: relative;
+      }
+
+      .chart-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        font-size: 14px;
+      }
+
+      .chart-svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .chart-line {
+        fill: none;
+        stroke: var(--accent-primary);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-area {
+        fill: url(#chartGradient);
+      }
+
+      .chart-dot {
+        fill: var(--accent-primary);
+      }
+
+      .chart-axis {
+        stroke: var(--border-default);
+        stroke-width: 1;
+      }
+
+      .chart-label {
+        font-size: 11px;
+        fill: var(--text-tertiary);
+        font-family: "Inter", sans-serif;
+      }
+
+      /* ============================================
+           API Endpoints / Graph
+           ============================================ */
+
+      .endpoints-card {
+        grid-column: span 6;
+      }
+
+      @media (max-width: 1024px) {
+        .endpoints-card {
+          grid-column: span 12;
+        }
+      }
+
+      .endpoint-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .endpoint-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        border: none;
+        width: 100%;
+        text-align: left;
+        color: var(--text-primary);
+      }
+
+      .endpoint-item:hover {
+        background: var(--bg-card-hover);
+      }
+
+      .endpoint-item:active {
+        transform: scale(0.98);
+      }
+
+      .endpoint-method {
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+
+      .endpoint-method.get {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--health-excellent);
+      }
+      .endpoint-method.post {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-primary);
+      }
+      .endpoint-method.delete {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--health-critical);
+      }
+
+      .endpoint-path {
+        flex: 1;
+        margin-left: 12px;
+        color: var(--text-secondary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .endpoint-description {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        margin-left: 8px;
+        font-family: "Inter", sans-serif;
+      }
+
+      .endpoint-copy {
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+        padding: 4px;
+        color: var(--text-tertiary);
+      }
+
+      .endpoint-item:hover .endpoint-copy {
+        opacity: 1;
+      }
+
+      /* ============================================
+           Quick Actions
+           ============================================ */
+
+      .action-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        border: none;
+        width: 100%;
+        text-align: left;
+        color: var(--text-primary);
+      }
+
+      .action-item:hover {
+        background: var(--bg-card-hover);
+      }
+
+      .action-item:active {
+        transform: scale(0.98);
+      }
+
+      .action-icon {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        font-size: 16px;
+      }
+
+      .action-icon.refresh {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--health-excellent);
+      }
+
+      .action-icon.add {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-primary);
+      }
+
+      .action-icon.delete {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--health-critical);
+      }
+
+      .action-label {
+        flex: 1;
+      }
+
+      /* ============================================
+           Loading States
+           ============================================ */
+
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--bg-tertiary) 25%,
+          var(--bg-card-hover) 50%,
+          var(--bg-tertiary) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s ease-in-out infinite;
+        border-radius: var(--radius-md);
+      }
+
+      @keyframes skeleton-loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--border-default);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ============================================
+           Modal
+           ============================================ */
+
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-normal);
+      }
+
+      .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        width: 90%;
+        max-width: 400px;
+        transform: scale(0.95);
+        transition: transform var(--transition-normal);
+      }
+
+      .modal-overlay.active .modal {
+        transform: scale(1);
+      }
+
+      .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+
+      .modal-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      .modal-input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        border: none;
+      }
+
+      .btn-primary {
+        background: var(--accent-primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #2563eb;
+      }
+
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg-card-hover);
+        color: var(--text-primary);
+      }
+
+      /* ============================================
+           Toast Notifications
+           ============================================ */
+
+      .toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 300;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .toast {
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        font-size: 13px;
+        box-shadow: var(--shadow-lg);
+        animation: toast-in 0.3s ease;
+      }
+
+      .toast.success {
+        border-color: var(--health-excellent);
+      }
+
+      .toast.error {
+        border-color: var(--health-critical);
+      }
+
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* ============================================
+           Responsive
+           ============================================ */
+
+      @media (max-width: 768px) {
+        .header {
+          padding: 0 16px;
+        }
+
+        .nav-tabs {
+          display: none;
+        }
+
+        .main-content {
+          padding: 20px 16px;
+        }
+
+        .dashboard-grid {
+          gap: 16px;
+        }
+
+        .card {
+          padding: 20px;
+        }
+
+        .health-gauge {
+          width: 150px;
+          height: 150px;
+        }
+
+        .health-score-value {
+          font-size: 36px;
+        }
+      }
+
+      /* ============================================
+           Utilities
+           ============================================ */
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+      .mt-4 {
+        margin-top: 16px;
+      }
+      .mt-6 {
+        margin-top: 24px;
+      }
+      .mb-4 {
+        margin-bottom: 16px;
+      }
+
+      /* Fade in animation */
+      .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .stagger-1 {
+        animation-delay: 0.1s;
+      }
+      .stagger-2 {
+        animation-delay: 0.2s;
+      }
+      .stagger-3 {
+        animation-delay: 0.3s;
+      }
+      .stagger-4 {
+        animation-delay: 0.4s;
+      }
+
+      /* ============================================
+           Flying Variables on Hover
+           ============================================ */
+
+      .metric-card {
+        position: relative;
+      }
+
+      .flying-vars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+        border-radius: var(--radius-lg);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+      }
+
+      .metric-card:hover .flying-vars {
+        opacity: 1;
+      }
+
+      .flying-var {
+        position: absolute;
+        font-size: 9px;
+        font-family: "JetBrains Mono", monospace;
+        padding: 2px 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: var(--text-tertiary);
+        white-space: nowrap;
+        animation: flyAround 3s ease-in-out infinite;
+        animation-fill-mode: both;
+      }
+
+      @keyframes flyAround {
+        0% {
+          transform: translate(0, 0) scale(0.8);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--tx), var(--ty)) scale(0.8);
+          opacity: 0;
+        }
+      }
+
+      .health-score-card {
+        position: relative;
+      }
+
+      .health-score-card .flying-vars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+        border-radius: var(--radius-lg);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+      }
+
+      .health-score-card:hover .flying-vars {
+        opacity: 1;
+      }
+    </style>
   </head>
+  <body>
+    <div class="app-container">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="logo">
+            <div class="logo-icon">
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <span>SES Intelligence</span>
+          </div>
 
-  <body class="bg-neutral-950 text-neutral-100">
-    <div id="root"></div>
+          <nav class="nav-tabs" id="navTabs" role="navigation">
+            <!-- Dynamically rendered from API -->
+          </nav>
+        </div>
+
+        <div class="header-right">
+          <div class="project-selector" id="projectSelector">
+            <span class="status-indicator"></span>
+            <span id="currentProject">default</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="dashboard-grid" id="dashboardGrid">
+          <!-- Dynamic content will be rendered here -->
+          <div class="card" style="grid-column: span 12">
+            <div class="text-center" style="padding: 40px">
+              <div class="loading-spinner" style="margin: 0 auto"></div>
+              <p style="margin-top: 16px; color: var(--text-tertiary)">
+                Loading dashboard...
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer
+        style="
+          padding: 24px;
+          text-align: center;
+          color: var(--text-tertiary);
+          font-size: 12px;
+          border-top: 1px solid var(--border-subtle);
+        "
+      >
+        <p>SES Intelligence v1.0.0b1 • Built with Django + Vanilla JS</p>
+      </footer>
+    </div>
+
+    <!-- Modal for Create Project -->
+    <div class="modal-overlay" id="createProjectModal">
+      <div class="modal">
+        <h3 class="modal-title">Create New Project</h3>
+        <input
+          type="text"
+          class="modal-input"
+          id="projectNameInput"
+          placeholder="Enter project name..."
+        />
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeCreateProjectModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="createProject()">
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+      // ============================================
+      // SES Intelligence Dashboard - API Client
+      // ============================================
+
+      const API_BASE = "";
+      let currentProject = "default";
+      let uiConfig = null;
+      let currentView = "dashboard";
+
+      // Color mapping for health scores
+      function getHealthColor(score) {
+        if (score >= 80) return "#10b981"; // Excellent
+        if (score >= 60) return "#22c55e"; // Good
+        if (score >= 40) return "#eab308"; // Warning
+        return "#ef4444"; // Critical
+      }
+
+      function getHealthStatus(score) {
+        if (score >= 80) return { text: "Excellent", class: "" };
+        if (score >= 60) return { text: "Good", class: "" };
+        if (score >= 40) return { text: "Warning", class: "warning" };
+        return { text: "Critical", class: "critical" };
+      }
+
+      // Show toast notification
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      // Copy endpoint to clipboard
+      function copyEndpoint(path) {
+        navigator.clipboard
+          .writeText(window.location.origin + path)
+          .then(() => {
+            showToast("Copied to clipboard!");
+          })
+          .catch(() => {
+            showToast("Failed to copy", "error");
+          });
+      }
+
+      // Fetch UI configuration
+      async function fetchConfig() {
+        try {
+          const response = await fetch(`${API_BASE}/api/v1/config/`);
+          uiConfig = await response.json();
+          return uiConfig;
+        } catch (error) {
+          console.error("Failed to fetch config:", error);
+          // Fallback config
+          uiConfig = {
+            available_views: [
+              { id: "dashboard", label: "Dashboard", default: true },
+              { id: "health", label: "Health" },
+              { id: "forecast", label: "Forecast" },
+              { id: "architecture", label: "Architecture" },
+              { id: "api", label: "API" },
+            ],
+            available_endpoints: [
+              {
+                method: "GET",
+                path: "/api/v1/health/",
+                description: "Get health",
+              },
+              {
+                method: "GET",
+                path: "/api/v1/forecast/",
+                description: "Get forecast",
+              },
+            ],
+            features: { projects: true, create_project: true },
+          };
+          return uiConfig;
+        }
+      }
+
+      // Render navigation tabs
+      function renderNavTabs() {
+        const navTabs = document.getElementById("navTabs");
+        if (!uiConfig || !uiConfig.available_views) return;
+
+        navTabs.innerHTML = uiConfig.available_views
+          .map(
+            (view) => `
+          <button class="nav-tab ${view.default ? "active" : ""}" data-view="${view.id}">
+            ${view.label}
+          </button>
+        `,
+          )
+          .join("");
+
+        // Add click handlers
+        navTabs.querySelectorAll(".nav-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            const view = tab.dataset.view;
+            setActiveView(view);
+          });
+        });
+      }
+
+      // Set active view
+      function setActiveView(view) {
+        currentView = view;
+        document.querySelectorAll(".nav-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.view === view);
+        });
+        renderDashboard();
+      }
+
+      // Render dashboard based on current view
+      function renderDashboard() {
+        const grid = document.getElementById("dashboardGrid");
+
+        if (currentView === "dashboard") {
+          renderDashboardView(grid);
+        } else if (currentView === "health") {
+          renderHealthView(grid);
+        } else if (currentView === "forecast") {
+          renderForecastView(grid);
+        } else if (currentView === "architecture") {
+          renderArchitectureView(grid);
+        } else if (currentView === "api") {
+          renderAPIView(grid);
+        } else {
+          // For other views, show placeholder
+          grid.innerHTML = `
+            <div class="card" style="grid-column: span 12;">
+              <div class="text-center" style="padding: 40px;">
+                <h3 style="margin-bottom: 8px;">${currentView.charAt(0).toUpperCase() + currentView.slice(1)} View</h3>
+                <p style="color: var(--text-tertiary);">This view is coming soon...</p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Render Health detailed view
+      async function renderHealthView(grid) {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: span 12;">
+            <div class="card-header">
+              <span class="card-title">Health Details</span>
+            </div>
+            <div id="healthDetailsContent">
+              <div class="skeleton" style="height: 200px"></div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/health/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const container = document.getElementById("healthDetailsContent");
+          if (!container) return;
+
+          const forecastInt = data.forecast_intelligence || {};
+          const edges = data.edges || [];
+
+          container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+              <div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-md);">
+                <h4 style="color: var(--text-tertiary); font-size: 12px; margin-bottom: 8px;">HEALTH SCORE</h4>
+                <div style="font-size: 36px; font-weight: 700; color: ${getHealthColor(data.health_score)};">${data.health_score || 0}</div>
+                <p style="color: var(--text-secondary); font-size: 13px;">${data.health_label || "Unknown"}</p>
+              </div>
+              <div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-md);">
+                <h4 style="color: var(--text-tertiary); font-size: 12px; margin-bottom: 8px;">STABILITY</h4>
+                <div style="font-size: 36px; font-weight: 700;">${((data.stability_index || 0) * 100).toFixed(1)}%</div>
+                <p style="color: var(--text-secondary); font-size: 13px;">System consistency</p>
+              </div>
+              <div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-md);">
+                <h4 style="color: var(--text-tertiary); font-size: 12px; margin-bottom: 8px;">RISKS</h4>
+                <div style="font-size: 36px; font-weight: 700; color: ${data.risk_count > 0 ? "#ef4444" : "var(--text-primary)"};">${data.risk_count || 0}</div>
+                <p style="color: var(--text-secondary); font-size: 13px;">Active anomalies</p>
+              </div>
+            </div>
+            <div style="margin-top: 24px;">
+              <h4 style="color: var(--text-tertiary); font-size: 12px; margin-bottom: 12px;">FORECAST CONFIDENCE</h4>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                <div style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-sm);">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Confidence</div>
+                  <div style="font-size: 16px; font-weight: 600;">${((forecastInt.confidence_score || 0) * 100).toFixed(1)}%</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-sm);">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">RMSE</div>
+                  <div style="font-size: 16px; font-weight: 600;">${(forecastInt.rmse || 0).toFixed(4)}</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-sm);">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Volatility</div>
+                  <div style="font-size: 16px; font-weight: 600; text-transform: capitalize;">${forecastInt.volatility || "N/A"}</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-sm);">
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Trend</div>
+                  <div style="font-size: 16px; font-weight: 600; text-transform: capitalize;">${(data.trend_direction || "flat").replace(/_/g, " ")}</div>
+                </div>
+              </div>
+            </div>
+            ${
+              edges.length > 0
+                ? `
+            <div style="margin-top: 24px;">
+              <h4 style="color: var(--text-tertiary); font-size: 12px; margin-bottom: 12px;">EDGE STABILITY</h4>
+              <div style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto;">
+                ${edges
+                  .slice(0, 10)
+                  .map(
+                    (edge) => `
+                  <div style="background: var(--bg-tertiary); padding: 12px; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <div style="font-family: monospace; font-size: 12px;">${edge.source} → ${edge.target}</div>
+                      <div style="font-size: 11px; color: var(--text-tertiary);">${edge.anomaly_flag ? "⚠ Anomaly detected" : "Normal"}</div>
+                    </div>
+                    <div style="font-size: 14px; font-weight: 600; color: ${edge.stability_index < 0.5 ? "#ef4444" : edge.stability_index < 0.8 ? "#eab308" : "#10b981"};">
+                      ${(edge.stability_index * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+            `
+                : ""
+            }
+          `;
+        } catch (error) {
+          console.error("Failed to fetch health details:", error);
+          const container = document.getElementById("healthDetailsContent");
+          if (container)
+            container.innerHTML = "<p>Failed to load health details</p>";
+        }
+      }
+
+      // Render Forecast view
+      async function renderForecastView(grid) {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: span 12;">
+            <div class="card-header">
+              <span class="card-title">Forecast & Trends</span>
+            </div>
+            <div class="chart-container" id="forecastViewChart" style="height: 350px;">
+              <div class="chart-placeholder">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 12px">Loading forecast data...</p>
+              </div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/forecast/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const history = data.history || [];
+          const forecast = data.forecast?.forecast || [];
+
+          renderFullChart(history, forecast);
+        } catch (error) {
+          console.error("Failed to fetch forecast:", error);
+          const container = document.getElementById("forecastViewChart");
+          if (container)
+            container.innerHTML =
+              '<div class="chart-placeholder"><p>Failed to load forecast</p></div>';
+        }
+      }
+
+      // Full chart rendering for forecast view
+      function renderFullChart(history, forecast) {
+        const container = document.getElementById("forecastViewChart");
+        if (!container) return;
+
+        if (!history.length && !forecast.length) {
+          container.innerHTML =
+            '<div class="chart-placeholder"><p>No historical data yet</p></div>';
+          return;
+        }
+
+        const allData = [...history, ...forecast];
+        const width = container.clientWidth || 800;
+        const height = 320;
+        const padding = { top: 30, right: 30, bottom: 40, left: 50 };
+
+        const scores = allData.map((d) => d.health_score || 0);
+        const maxScore = Math.max(...scores, 100);
+        const minScore = Math.min(...scores, 0);
+
+        const xScale = (i) =>
+          padding.left +
+          (i / (allData.length - 1 || 1)) *
+            (width - padding.left - padding.right);
+        const yScale = (s) =>
+          height -
+          padding.bottom -
+          ((s - minScore) / (maxScore - minScore || 1)) *
+            (height - padding.top - padding.bottom);
+
+        let pathD = "";
+        let areaD = `M ${xScale(0)} ${yScale(allData[0]?.health_score || 0)}`;
+
+        allData.forEach((d, i) => {
+          const x = xScale(i);
+          const y = yScale(d.health_score || 0);
+          if (i > 0) {
+            pathD += ` L ${x} ${y}`;
+            areaD += ` L ${x} ${y}`;
+          }
+        });
+
+        areaD += ` L ${xScale(allData.length - 1)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`;
+
+        let dots = "";
+        allData.forEach((d, i) => {
+          const x = xScale(i);
+          const y = yScale(d.health_score || 0);
+          if (i < history.length) {
+            dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" />`;
+          } else {
+            dots += `<circle cx="${x}" cy="${y}" r="5" fill="#a855f7" />`;
+          }
+        });
+
+        container.innerHTML = `
+          <svg class="chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="chartGradientFull" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(25)}" x2="${width - padding.right}" y2="${yScale(25)}" />
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(50)}" x2="${width - padding.right}" y2="${yScale(50)}" />
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(75)}" x2="${width - padding.right}" y2="${yScale(75)}" />
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(0) + 4}" text-anchor="end">0</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(25) + 4}" text-anchor="end">25</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(50) + 4}" text-anchor="end">50</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(75) + 4}" text-anchor="end">75</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(100) + 4}" text-anchor="end">100</text>
+            <path class="chart-area" d="${areaD}" fill="url(#chartGradientFull)" />
+            <path class="chart-line" d="${pathD}" stroke-width="3" />
+            ${dots}
+            ${history.length > 0 && forecast.length > 0 ? `<line x1="${xScale(history.length - 0.5)}" y1="${padding.top}" x2="${xScale(history.length - 0.5)}" y2="${height - padding.bottom}" stroke="var(--text-tertiary)" stroke-dasharray="6" opacity="0.5" />` : ""}
+            <text class="chart-label" x="${width - padding.right - 50}" y="${padding.top + 10}" fill="#a855f7" font-size="12">● Forecast</text>
+            <text class="chart-label" x="${width - padding.right - 50}" y="${padding.top + 25}" fill="var(--accent-primary)" font-size="12">● History</text>
+          </svg>
+        `;
+      }
+
+      // Render Architecture Graph view
+      async function renderArchitectureView(grid) {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: span 12;">
+            <div class="card-header">
+              <span class="card-title">Architecture Graph</span>
+            </div>
+            <div id="architectureGraph" style="height: 400px; position: relative;">
+              <div class="chart-placeholder">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 12px">Loading architecture graph...</p>
+              </div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/graph/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const container = document.getElementById("architectureGraph");
+          if (!container) return;
+
+          const nodes = data.nodes || [];
+          const edges = data.edges || [];
+
+          if (nodes.length === 0) {
+            container.innerHTML =
+              '<div class="chart-placeholder"><p>No architecture data yet. Run your instrumented application to detect the architecture.</p></div>';
+            return;
+          }
+
+          // Simple force-directed layout simulation
+          const width = container.clientWidth || 800;
+          const height = 380;
+          const centerX = width / 2;
+          const centerY = height / 2;
+
+          // Position nodes in a circle
+          const nodePositions = {};
+          const radius = Math.min(width, height) * 0.35;
+          nodes.forEach((node, i) => {
+            const angle = (2 * Math.PI * i) / nodes.length - Math.PI / 2;
+            nodePositions[node.id] = {
+              x: centerX + radius * Math.cos(angle),
+              y: centerY + radius * Math.sin(angle),
+            };
+          });
+
+          // Draw SVG
+          let svgContent = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%;">`;
+
+          // Draw edges
+          edges.forEach((edge) => {
+            const source = nodePositions[edge.source];
+            const target = nodePositions[edge.target];
+            if (source && target) {
+              const strokeColor = edge.anomaly_flag
+                ? "#ef4444"
+                : edge.stability_index < 0.5
+                  ? "#eab308"
+                  : "#3b82f6";
+              const strokeWidth = Math.max(
+                1,
+                Math.min(4, (edge.call_count || 1) / 10 + 1),
+              );
+              svgContent += `<line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" stroke="${strokeColor}" stroke-width="${strokeWidth}" opacity="0.6" />`;
+            }
+          });
+
+          // Draw nodes
+          nodes.forEach((node) => {
+            const pos = nodePositions[node.id];
+            if (pos) {
+              svgContent += `
+                <g>
+                  <circle cx="${pos.x}" cy="${pos.y}" r="24" fill="var(--bg-card)" stroke="var(--accent-primary)" stroke-width="2" />
+                  <text x="${pos.x}" y="${pos.y + 4}" text-anchor="middle" fill="var(--text-primary)" font-size="10" font-weight="500">${node.id.substring(0, 8)}</text>
+                </g>
+              `;
+            }
+          });
+
+          svgContent += "</svg>";
+
+          container.innerHTML =
+            svgContent +
+            `
+            <div style="position: absolute; bottom: 10px; left: 10px; display: flex; gap: 16px; font-size: 11px;">
+              <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #3b82f6;"></span> Stable</div>
+              <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #eab308;"></span> Degraded</div>
+              <div style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 3px; background: #ef4444;"></span> Anomaly</div>
+            </div>
+          `;
+        } catch (error) {
+          console.error("Failed to fetch architecture graph:", error);
+          const container = document.getElementById("architectureGraph");
+          if (container)
+            container.innerHTML =
+              '<div class="chart-placeholder"><p>Failed to load architecture graph</p></div>';
+        }
+      }
+
+      // Render dashboard view (original content)
+      function renderDashboardView(grid) {
+        grid.innerHTML = `
+          <!-- Health Score Card -->
+          <div class="card health-score-card fade-in stagger-1">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 10%; left: 5%; --tx: 20px; --ty: -10px; animation-delay: 0s;">edge_count</span>
+              <span class="flying-var" style="top: 20%; right: 5%; --tx: -30px; --ty: 15px; animation-delay: 0.5s;">stability_index</span>
+              <span class="flying-var" style="bottom: 30%; left: 10%; --tx: 25px; --ty: 20px; animation-delay: 1s;">drift_score</span>
+              <span class="flying-var" style="bottom: 15%; right: 10%; --tx: -20px; --ty: -25px; animation-delay: 1.5s;">anomaly_count</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Architecture Health</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+            </div>
+            <div class="health-gauge" id="healthGauge">
+              <div class="health-gauge-bg"></div>
+              <div class="health-gauge-fill" id="healthGaugeFill"></div>
+              <div class="health-gauge-inner">
+                <span class="health-score-value" id="healthScore">--</span>
+                <span class="health-score-label">out of 100</span>
+              </div>
+            </div>
+            <div class="health-status">
+              <span class="health-status-badge" id="healthBadge">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span id="healthStatus">Loading...</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Stability Index -->
+          <div class="card metric-card fade-in stagger-2">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 15%; left: 8%; --tx: 15px; --ty: -20px; animation-delay: 0.2s;">timing_volatility</span>
+              <span class="flying-var" style="top: 25%; right: 8%; --tx: -25px; --ty: 10px; animation-delay: 0.7s;">timing_slope</span>
+              <span class="flying-var" style="bottom: 25%; left: 12%; --tx: 30px; --ty: 15px; animation-delay: 1.2s;">anomaly_flag</span>
+              <span class="flying-var" style="bottom: 10%; right: 5%; --tx: -15px; --ty: -30px; animation-delay: 1.7s;">appearance_freq</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Stability Index</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value" id="stabilityIndex">--</div>
+            <div class="metric-label">System consistency score</div>
+            <div class="metric-trend neutral" id="stabilityTrend">
+              <span>No data</span>
+            </div>
+          </div>
+
+          <!-- Confidence Score -->
+          <div class="card metric-card fade-in stagger-2">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 12%; left: 10%; --tx: 20px; --ty: -15px; animation-delay: 0.3s;">rmse</span>
+              <span class="flying-var" style="top: 22%; right: 5%; --tx: -30px; --ty: 20px; animation-delay: 0.8s;">residual_var</span>
+              <span class="flying-var" style="bottom: 28%; left: 8%; --tx: 25px; --ty: 25px; animation-delay: 1.3s;">mean_health</span>
+              <span class="flying-var" style="bottom: 8%; right: 12%; --tx: -20px; --ty: -20px; animation-delay: 1.8s;">window_size</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Confidence</span>
+              <div class="card-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value" id="confidenceScore">--</div>
+            <div class="metric-label">Forecast confidence score</div>
+            <div class="metric-trend neutral" id="confidenceTrend">
+              <span>No data</span>
+            </div>
+          </div>
+
+          <!-- Volatility -->
+          <div class="card metric-card fade-in stagger-3">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 10%; left: 6%; --tx: 25px; --ty: -10px; animation-delay: 0.1s;">std_dev</span>
+              <span class="flying-var" style="top: 28%; right: 8%; --tx: -20px; --ty: 25px; animation-delay: 0.6s;">durations[]</span>
+              <span class="flying-var" style="bottom: 22%; left: 12%; --tx: 15px; --ty: -30px; animation-delay: 1.1s;">call_count</span>
+              <span class="flying-var" style="bottom: 8%; right: 6%; --tx: -30px; --ty: 10px; animation-delay: 1.6s;">avg_duration</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Volatility</span>
+              <div class="card-icon" style="background: rgba(234, 179, 8, 0.15); color: #eab308">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value" id="volatilityLevel">--</div>
+            <div class="metric-label">System volatility level</div>
+            <div class="metric-trend neutral" id="volatilityTrend">
+              <span>No data</span>
+            </div>
+          </div>
+
+          <!-- Trend Direction -->
+          <div class="card metric-card fade-in stagger-3">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 15%; left: 10%; --tx: 20px; --ty: -25px; animation-delay: 0.4s;">trend</span>
+              <span class="flying-var" style="top: 30%; right: 6%; --tx: -25px; --ty: 15px; animation-delay: 0.9s;">slope</span>
+              <span class="flying-var" style="bottom: 20%; left: 8%; --tx: 30px; --ty: 20px; animation-delay: 1.4s;">forecast_next</span>
+              <span class="flying-var" style="bottom: 5%; right: 10%; --tx: -15px; --ty: -30px; animation-delay: 1.9s;">history[]</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Trend Direction</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value" id="trendDirection" style="font-size: 20px;">--</div>
+            <div class="metric-label">Health trajectory</div>
+            <div class="metric-trend neutral" id="healthDelta">
+              <span>No data</span>
+            </div>
+          </div>
+
+          <!-- Risk Count -->
+          <div class="card metric-card fade-in stagger-3">
+            <div class="flying-vars">
+              <span class="flying-var" style="top: 12%; left: 8%; --tx: 25px; --ty: -20px; animation-delay: 0.25s;">anomaly_flag</span>
+              <span class="flying-var" style="top: 26%; right: 10%; --tx: -20px; --ty: 30px; animation-delay: 0.75s;">edge.source</span>
+              <span class="flying-var" style="bottom: 24%; left: 6%; --tx: 30px; --ty: -15px; animation-delay: 1.25s;">edge.target</span>
+              <span class="flying-var" style="bottom: 6%; right: 8%; --tx: -30px; --ty: -25px; animation-delay: 1.75s;">risk_level</span>
+            </div>
+            <div class="card-header">
+              <span class="card-title">Active Risks</span>
+              <div class="card-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-value" id="riskCount">--</div>
+            <div class="metric-label">Anomalies detected</div>
+            <div class="metric-trend neutral" id="riskTrend">
+              <span>No data</span>
+            </div>
+          </div>
+
+          <!-- Executive Summary -->
+          <div class="card executive-card fade-in stagger-4">
+            <div class="card-header">
+              <span class="card-title">Executive Summary</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+            <div class="executive-summary" id="executiveSummary">
+              <div class="skeleton" style="height: 120px"></div>
+            </div>
+          </div>
+
+          <!-- Forecast Chart -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <span class="card-title">Health Trend & Forecast</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+              </div>
+            </div>
+            <div class="chart-container" id="forecastChart">
+              <div class="chart-placeholder">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 12px">Loading forecast data...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Endpoints -->
+          <div class="card endpoints-card">
+            <div class="card-header">
+              <span class="card-title">API Endpoints</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+            <div class="endpoint-list" id="endpointList">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="card endpoints-card">
+            <div class="card-header">
+              <span class="card-title">Quick Actions</span>
+              <div class="card-icon">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+            <div class="endpoint-list" style="gap: 12px" id="quickActions">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+        `;
+
+        // Render endpoints from config
+        renderEndpoints();
+
+        // Render quick actions from config
+        renderQuickActions();
+
+        // Fetch data
+        refreshData();
+      }
+
+      // Render API view
+      function renderAPIView(grid) {
+        if (!uiConfig || !uiConfig.available_endpoints) {
+          grid.innerHTML = `
+            <div class="card" style="grid-column: span 12;">
+              <p>No endpoints available</p>
+            </div>
+          `;
+          return;
+        }
+
+        const endpoints = uiConfig.available_endpoints
+          .map(
+            (ep) => `
+          <button class="endpoint-item" onclick="copyEndpoint('${ep.path}')">
+            <span class="endpoint-method ${ep.method.toLowerCase()}">${ep.method}</span>
+            <span class="endpoint-path">${ep.path}</span>
+            <span class="endpoint-description">${ep.description || ""}</span>
+            <span class="endpoint-copy">📋</span>
+          </button>
+        `,
+          )
+          .join("");
+
+        grid.innerHTML = `
+          <div class="card" style="grid-column: span 12;">
+            <div class="card-header">
+              <span class="card-title">API Reference</span>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+              Click on any endpoint to copy its full URL. All endpoints accept a <code>project</code> query parameter.
+            </p>
+            <div class="endpoint-list">
+              ${endpoints}
+            </div>
+          </div>
+        `;
+      }
+
+      // Render endpoints from config
+      function renderEndpoints() {
+        const container = document.getElementById("endpointList");
+        if (!container || !uiConfig || !uiConfig.available_endpoints) return;
+
+        container.innerHTML = uiConfig.available_endpoints
+          .slice(0, 5)
+          .map(
+            (ep) => `
+          <button class="endpoint-item" onclick="copyEndpoint('${ep.path}')">
+            <span class="endpoint-method ${ep.method.toLowerCase()}">${ep.method}</span>
+            <span class="endpoint-path">${ep.path}</span>
+            <span class="endpoint-copy">📋</span>
+          </button>
+        `,
+          )
+          .join("");
+      }
+
+      // Render quick actions from config
+      function renderQuickActions() {
+        const container = document.getElementById("quickActions");
+        if (!container || !uiConfig || !uiConfig.features) return;
+
+        const features = uiConfig.features;
+        let actions = `
+          <button class="action-item" onclick="refreshData()">
+            <span class="action-icon refresh">↻</span>
+            <span class="action-label">Refresh Dashboard</span>
+          </button>
+        `;
+
+        if (features.create_project) {
+          actions += `
+            <button class="action-item" onclick="openCreateProjectModal()">
+              <span class="action-icon add">+</span>
+              <span class="action-label">Create New Project</span>
+            </button>
+          `;
+        }
+
+        container.innerHTML = actions;
+      }
+
+      // Update health gauge
+      function updateHealthGauge(score) {
+        const scoreEl = document.getElementById("healthScore");
+        const fillEl = document.getElementById("healthGaugeFill");
+        const badgeEl = document.getElementById("healthBadge");
+        const statusEl = document.getElementById("healthStatus");
+
+        if (!scoreEl) return;
+
+        const color = getHealthColor(score);
+        const deg = (score / 100) * 180;
+        const status = getHealthStatus(score);
+
+        scoreEl.textContent = score;
+        scoreEl.style.color = color;
+
+        if (fillEl) {
+          fillEl.style.setProperty("--health-color", color);
+          fillEl.style.setProperty("--health-deg", deg + "deg");
+        }
+
+        if (badgeEl) {
+          badgeEl.className = "health-status-badge " + status.class;
+        }
+        if (statusEl) {
+          statusEl.textContent = status.text;
+        }
+      }
+
+      // Fetch health data
+      async function fetchHealth() {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/health/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const score = Math.round(
+            data.overall_score || data.health_score || 0,
+          );
+          const stability = data.stability_index || 0;
+          const riskCount = data.risk_count || 0;
+
+          updateHealthGauge(score);
+
+          const stabilityEl = document.getElementById("stabilityIndex");
+          const riskEl = document.getElementById("riskCount");
+          const confidenceEl = document.getElementById("confidenceScore");
+          const volatilityEl = document.getElementById("volatilityLevel");
+          const trendEl = document.getElementById("trendDirection");
+          const deltaEl = document.getElementById("healthDelta");
+          const rmseEl = document.getElementById("forecastRmse");
+          const forecastNextEl = document.getElementById("forecastNext");
+          const ciEl = document.getElementById("confidenceInterval");
+
+          if (stabilityEl)
+            stabilityEl.textContent = (stability * 100).toFixed(1) + "%";
+          if (riskEl) riskEl.textContent = riskCount;
+
+          // Update trends
+          const stabilityTrend = document.getElementById("stabilityTrend");
+          if (stabilityTrend) {
+            if (stability >= 0.8) {
+              stabilityTrend.className = "metric-trend positive";
+              stabilityTrend.innerHTML = "<span>↑ Stable</span>";
+            } else if (stability >= 0.5) {
+              stabilityTrend.className = "metric-trend neutral";
+              stabilityTrend.innerHTML = "<span>→ Moderate</span>";
+            } else {
+              stabilityTrend.className = "metric-trend negative";
+              stabilityTrend.innerHTML = "<span>↓ Unstable</span>";
+            }
+          }
+
+          // Confidence Score (from forecast_intelligence)
+          const forecastInt = data.forecast_intelligence || {};
+          const confidence = forecastInt.confidence_score;
+          if (confidenceEl) {
+            if (confidence !== undefined) {
+              confidenceEl.textContent = (confidence * 100).toFixed(1) + "%";
+            } else {
+              confidenceEl.textContent = "--";
+            }
+          }
+
+          // Volatility
+          const volatility = data.volatility_label || forecastInt.volatility;
+          if (volatilityEl) {
+            volatilityEl.textContent = volatility || "N/A";
+          }
+
+          // Trend Direction
+          const trend = data.trend_direction || "flat";
+          if (trendEl) {
+            trendEl.textContent = trend.replace(/_/g, " ");
+          }
+
+          // Delta (change from last score)
+          const delta = data.delta || 0;
+          if (deltaEl) {
+            if (delta > 0) {
+              deltaEl.textContent = "+" + delta.toFixed(1);
+              deltaEl.className = "metric-trend positive";
+            } else if (delta < 0) {
+              deltaEl.textContent = delta.toFixed(1);
+              deltaEl.className = "metric-trend negative";
+            } else {
+              deltaEl.textContent = "0";
+              deltaEl.className = "metric-trend neutral";
+            }
+          }
+
+          // Forecast details
+          const forecast = forecastInt.forecast_next;
+          if (forecastNextEl) {
+            forecastNextEl.textContent =
+              forecast !== undefined ? forecast.toFixed(1) : "--";
+          }
+
+          const rmse = forecastInt.rmse;
+          if (rmseEl) {
+            rmseEl.textContent = rmse !== undefined ? rmse.toFixed(4) : "--";
+          }
+
+          const ci = forecastInt.confidence_interval;
+          if (ciEl) {
+            if (ci && ci.lower !== undefined && ci.upper !== undefined) {
+              ciEl.textContent = "[" + ci.lower + ", " + ci.upper + "]";
+            } else {
+              ciEl.textContent = "--";
+            }
+          }
+
+          return data;
+        } catch (error) {
+          console.error("Failed to fetch health:", error);
+          updateHealthGauge(0);
+          const stabilityEl = document.getElementById("stabilityIndex");
+          const riskEl = document.getElementById("riskCount");
+          if (stabilityEl) stabilityEl.textContent = "--";
+          if (riskEl) riskEl.textContent = "--";
+        }
+      }
+
+      // Fetch executive summary
+      async function fetchExecutive() {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/executive/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const summaryEl = document.getElementById("executiveSummary");
+          if (!summaryEl) return;
+
+          const summary = data.summary || {};
+
+          let html = "";
+          if (typeof summary === "string") {
+            html = `<p>${summary}</p>`;
+          } else {
+            html = `
+              <p><strong>Current Status:</strong> ${data.health_score || "N/A"}/100 health score</p>
+              <p><strong>Trend:</strong> ${data.trend_slope >= 0 ? "Improving ↑" : "Declining ↓"} (slope: ${(data.trend_slope || 0).toFixed(2)})</p>
+              <p><strong>Risks:</strong> ${data.risk_count || 0} active issues detected</p>
+            `;
+          }
+
+          summaryEl.innerHTML = html;
+          return data;
+        } catch (error) {
+          console.error("Failed to fetch executive:", error);
+          const summaryEl = document.getElementById("executiveSummary");
+          if (summaryEl) summaryEl.innerHTML = "<p>Failed to load summary</p>";
+        }
+      }
+
+      // Fetch and render forecast chart
+      async function fetchForecast() {
+        try {
+          const response = await fetch(
+            `${API_BASE}/api/v1/forecast/?project=${currentProject}`,
+          );
+          const data = await response.json();
+
+          const history = data.history || [];
+          const forecast = data.forecast?.forecast || [];
+
+          renderChart(history, forecast);
+        } catch (error) {
+          console.error("Failed to fetch forecast:", error);
+          const container = document.getElementById("forecastChart");
+          if (container) {
+            container.innerHTML =
+              '<div class="chart-placeholder"><p>No data available</p></div>';
+          }
+        }
+      }
+
+      // Simple line chart rendering
+      function renderChart(history, forecast) {
+        const container = document.getElementById("forecastChart");
+        if (!container) return;
+
+        if (!history.length && !forecast.length) {
+          container.innerHTML =
+            '<div class="chart-placeholder"><p>No historical data yet. Run your instrumented code to generate health data.</p></div>';
+          return;
+        }
+
+        const allData = [...history, ...forecast];
+        const width = container.clientWidth || 800;
+        const height = 240;
+        const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+
+        const scores = allData.map((d) => d.health_score || 0);
+        const maxScore = Math.max(...scores, 100);
+        const minScore = Math.min(...scores, 0);
+
+        const xScale = (i) =>
+          padding.left +
+          (i / (allData.length - 1 || 1)) *
+            (width - padding.left - padding.right);
+        const yScale = (s) =>
+          height -
+          padding.bottom -
+          ((s - minScore) / (maxScore - minScore || 1)) *
+            (height - padding.top - padding.bottom);
+
+        // Build path
+        let pathD = "";
+        let areaD = `M ${xScale(0)} ${yScale(allData[0]?.health_score || 0)}`;
+
+        allData.forEach((d, i) => {
+          const x = xScale(i);
+          const y = yScale(d.health_score || 0);
+          if (i > 0) {
+            pathD += ` L ${x} ${y}`;
+            areaD += ` L ${x} ${y}`;
+          }
+        });
+
+        areaD += ` L ${xScale(allData.length - 1)} ${height - padding.bottom} L ${xScale(0)} ${height - padding.bottom} Z`;
+
+        // Build dots
+        let dots = "";
+        allData.forEach((d, i) => {
+          if (i < history.length) {
+            const x = xScale(i);
+            const y = yScale(d.health_score || 0);
+            dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="4" />`;
+          }
+        });
+
+        // Forecast dots (different color)
+        forecast.forEach((d, i) => {
+          const x = xScale(history.length + i);
+          const y = yScale(d.health_score || 0);
+          dots += `<circle cx="${x}" cy="${y}" r="4" fill="#a855f7" />`;
+        });
+
+        container.innerHTML = `
+          <svg class="chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            
+            <!-- Grid lines -->
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(25)}" x2="${width - padding.right}" y2="${yScale(25)}" />
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(50)}" x2="${width - padding.right}" y2="${yScale(50)}" />
+            <line class="chart-axis" x1="${padding.left}" y1="${yScale(75)}" x2="${width - padding.right}" y2="${yScale(75)}" />
+            
+            <!-- Y-axis labels -->
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(0) + 4}" text-anchor="end">0</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(25) + 4}" text-anchor="end">25</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(50) + 4}" text-anchor="end">50</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(75) + 4}" text-anchor="end">75</text>
+            <text class="chart-label" x="${padding.left - 8}" y="${yScale(100) + 4}" text-anchor="end">100</text>
+            
+            <!-- Area fill -->
+            <path class="chart-area" d="${areaD}" />
+            
+            <!-- Line -->
+            <path class="chart-line" d="${pathD}" />
+            
+            <!-- Dots -->
+            ${dots}
+            
+            <!-- Divider between history and forecast -->
+            ${
+              history.length > 0 && forecast.length > 0
+                ? `<line x1="${xScale(history.length - 0.5)}" y1="${padding.top}" x2="${xScale(history.length - 0.5)}" y2="${height - padding.bottom}" stroke="var(--text-tertiary)" stroke-dasharray="4" opacity="0.5" />`
+                : ""
+            }
+            
+            <!-- Legend -->
+            <text class="chart-label" x="${width - padding.right - 60}" y="${padding.top}" fill="#a855f7">Forecast</text>
+          </svg>
+        `;
+      }
+
+      // Refresh all data
+      async function refreshData() {
+        await Promise.all([fetchHealth(), fetchExecutive(), fetchForecast()]);
+      }
+
+      // Create project modal functions
+      function openCreateProjectModal() {
+        document.getElementById("createProjectModal").classList.add("active");
+        document.getElementById("projectNameInput").focus();
+      }
+
+      function closeCreateProjectModal() {
+        document
+          .getElementById("createProjectModal")
+          .classList.remove("active");
+        document.getElementById("projectNameInput").value = "";
+      }
+
+      async function createProject() {
+        const name = document.getElementById("projectNameInput").value.trim();
+
+        try {
+          const response = await fetch(`${API_BASE}/api/v1/projects/create/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            showToast(`Project "${data.name || data.project_id}" created!`);
+            closeCreateProjectModal();
+            currentProject = data.project_id;
+            document.getElementById("currentProject").textContent =
+              currentProject;
+            refreshData();
+          } else {
+            showToast(
+              data.error?.message || "Failed to create project",
+              "error",
+            );
+          }
+        } catch (error) {
+          console.error("Failed to create project:", error);
+          showToast("Failed to create project", "error");
+        }
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Fetch config first
+        await fetchConfig();
+
+        // Render navigation
+        renderNavTabs();
+
+        // Render dashboard
+        renderDashboard();
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshData, 30000);
+      });
+
+      // Close modal on escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeCreateProjectModal();
+        }
+        if (
+          e.key === "Enter" &&
+          document
+            .getElementById("createProjectModal")
+            .classList.contains("active")
+        ) {
+          createProject();
+        }
+      });
+
+      // Close modal on overlay click
+      document
+        .getElementById("createProjectModal")
+        .addEventListener("click", (e) => {
+          if (e.target.id === "createProjectModal") {
+            closeCreateProjectModal();
+          }
+        });
+    </script>
   </body>
 </html>

@@ -125,6 +125,31 @@ def api_health(request):
     )
 
     result = engine.compute()
+    
+    # Always ensure health_score is present even if no snapshots
+    if "health_score" not in result:
+        # Try to load from history if no current snapshots
+        try:
+            from ses_intelligence.architecture_health.history import ArchitectureHealthHistory
+            history = ArchitectureHealthHistory(project_id=project_id)
+            historical = history.get_health_scores()
+            if historical:
+                result["health_score"] = historical[-1]
+                result["architecture_health_score"] = historical[-1]
+            else:
+                result["health_score"] = 50
+                result["architecture_health_score"] = 50
+        except Exception:
+            result["health_score"] = 50
+            result["architecture_health_score"] = 50
+    
+    # Ensure required fields have defaults
+    if result.get("stability_index") is None:
+        result["stability_index"] = 0.5
+    if result.get("risk_count") is None and result.get("anomaly_count") is not None:
+        result["risk_count"] = result.get("anomaly_count", 0)
+    if result.get("risk_count") is None:
+        result["risk_count"] = 0
 
     return JsonResponse({
         "timestamp": datetime.utcnow().isoformat(),
@@ -551,6 +576,42 @@ def api_chat(request):
             status_code=500,
             error_code="CHAT_ERROR"
         )
+
+
+def api_config(request):
+    """
+    Get UI configuration - available views, endpoints, and features.
+    This allows the frontend to dynamically render only what the backend supports.
+    """
+    return JsonResponse({
+        "timestamp": datetime.utcnow().isoformat(),
+        "available_views": [
+            {"id": "dashboard", "label": "Dashboard", "default": True},
+            {"id": "health", "label": "Health"},
+            {"id": "forecast", "label": "Forecast"},
+            {"id": "architecture", "label": "Architecture"},
+            {"id": "api", "label": "API"},
+        ],
+        "available_endpoints": [
+            {"method": "GET", "path": "/api/v1/health/", "description": "Get architecture health"},
+            {"method": "GET", "path": "/api/v1/forecast/", "description": "Get forecast data"},
+            {"method": "GET", "path": "/api/v1/graph/", "description": "Get architecture graph"},
+            {"method": "GET", "path": "/api/v1/executive/", "description": "Get executive summary"},
+            {"method": "GET", "path": "/api/v1/projects/", "description": "List all projects"},
+            {"method": "POST", "path": "/api/v1/projects/create/", "description": "Create a new project"},
+            {"method": "DELETE", "path": "/api/v1/projects/delete/{id}/", "description": "Delete a project"},
+            {"method": "POST", "path": "/api/v1/chat/", "description": "AI Chat assistant"},
+        ],
+        "features": {
+            "projects": True,
+            "create_project": True,
+            "delete_project": True,
+            "chat": True,
+            "forecast": True,
+            "graph": True,
+            "impact": True,
+        }
+    })
 
 
 def serve_index(request):

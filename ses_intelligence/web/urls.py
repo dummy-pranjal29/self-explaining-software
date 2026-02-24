@@ -24,6 +24,9 @@ urlpatterns = [
     # LLM Chat endpoint
     path("api/v1/chat/", views.api_chat, name="api_chat"),
     
+    # UI Config endpoint
+    path("api/v1/config/", views.api_config, name="api_config"),
+    
     # Legacy endpoints (without v1 prefix)
     path("api/projects/", views.api_projects_list, name="api_projects_list_legacy"),
     path("api/health/", views.api_health, name="api_health_legacy"),
@@ -33,6 +36,14 @@ urlpatterns = [
     path("api/executive/", views.api_executive, name="api_executive_legacy"),
     path("api/chat/", views.api_chat, name="api_chat_legacy"),
 ]
+
+# Static file serving
+from django.conf import settings
+from django.conf.urls.static import static
+
+# Serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
 
 # Catch-all for SPA - must be last
 urlpatterns += [

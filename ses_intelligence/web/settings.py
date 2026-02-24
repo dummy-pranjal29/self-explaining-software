@@ -84,8 +84,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ] + MIDDLEWARE
 
-# Use WhiteNoise storage for compressed static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Use WhiteNoise storage for static files (simple mode for development)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # ------------------------------------------------------------------
 # INTERNATIONALIZATION
