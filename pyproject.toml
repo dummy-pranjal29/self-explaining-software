@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ses-intelligence"
-version = "1.0.0b2"
+version = "1.0.0b3"
 description = "Runtime intelligence platform that monitors, analyzes, and explains software behavior changes in real-time"
 readme = "README.md"
 license = {text = "MIT"}
