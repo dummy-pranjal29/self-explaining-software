@@ -1232,7 +1232,11 @@
         </div>
 
         <div class="header-right">
-          <div class="project-selector" id="projectSelector">
+          <div
+            class="project-selector"
+            id="projectSelector"
+            onclick="showAgentModal()"
+          >
             <span class="status-indicator"></span>
             <span id="currentProject">default</span>
           </div>
@@ -1284,6 +1288,75 @@
           </button>
           <button class="btn btn-primary" onclick="createProject()">
             Create
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Agent Connection Info -->
+    <div class="modal-overlay" id="agentModal">
+      <div class="modal" style="max-width: 500px">
+        <h3 class="modal-title">🔗 Connect Your Local Machine</h3>
+        <p
+          style="
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 13px;
+          "
+        >
+          Send your local system's health data to this server. Your current
+          project ID is:
+        </p>
+        <div
+          style="
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            text-align: center;
+          "
+        >
+          <span
+            id="agentProjectId"
+            style="font-family: monospace; font-size: 16px; font-weight: 600"
+            >default</span
+          >
+        </div>
+        <p
+          style="
+            color: var(--text-tertiary);
+            font-size: 12px;
+            margin-bottom: 12px;
+          "
+        >
+          Run this command on your local machine:
+        </p>
+        <div
+          style="
+            background: #1e1e1e;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            overflow-x: auto;
+          "
+        >
+          <code
+            id="agentCommand"
+            style="color: #10b981; font-size: 12px; word-break: break-all"
+          >
+            ses agent --server http://localhost:8000 --project-id default
+          </code>
+        </div>
+        <p style="color: var(--text-tertiary); font-size: 12px">
+          <strong style="color: var(--text-secondary)"
+            >For Render deployment,</strong
+          >
+          replace the server URL with your Render app URL (e.g.,
+          https://your-app.onrender.com)
+        </p>
+        <div class="modal-actions" style="margin-top: 20px">
+          <button class="btn btn-primary" onclick="closeAgentModal()">
+            Got it!
           </button>
         </div>
       </div>
@@ -2489,6 +2562,42 @@
             closeCreateProjectModal();
           }
         });
+
+      // Agent modal functions
+      function showAgentModal() {
+        const modal = document.getElementById("agentModal");
+        if (!modal) return;
+
+        // Update project ID in modal
+        const projectIdEl = document.getElementById("agentProjectId");
+        const commandEl = document.getElementById("agentCommand");
+
+        if (projectIdEl) projectIdEl.textContent = currentProject;
+        if (commandEl) {
+          const serverUrl = window.location.origin;
+          commandEl.textContent = `ses agent --server ${serverUrl} --project-id ${currentProject}`;
+        }
+
+        modal.classList.add("active");
+      }
+
+      function closeAgentModal() {
+        document.getElementById("agentModal").classList.remove("active");
+      }
+
+      // Close agent modal on escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeAgentModal();
+        }
+      });
+
+      // Close agent modal on overlay click
+      document.getElementById("agentModal").addEventListener("click", (e) => {
+        if (e.target.id === "agentModal") {
+          closeAgentModal();
+        }
+      });
 
       // AI Chat functions
       function sendAIChat() {
