@@ -107,6 +107,35 @@ Examples:
         help="Don't open browser automatically"
     )
     
+    # agent command - run local agent to send data to remote server
+    agent_parser = subparsers.add_parser("agent", help="Run local agent to send data to remote server")
+    agent_parser.add_argument(
+        "--server",
+        default="http://localhost:8000",
+        help="Remote server URL (default: http://localhost:8000)"
+    )
+    agent_parser.add_argument(
+        "--project-id",
+        default="default",
+        help="Project ID to send data to (default: default)"
+    )
+    agent_parser.add_argument(
+        "--agent-id",
+        default=None,
+        help="Custom agent ID (default: auto-generated)"
+    )
+    agent_parser.add_argument(
+        "--agent-name",
+        default="Local Machine",
+        help="Agent name for display (default: Local Machine)"
+    )
+    agent_parser.add_argument(
+        "--interval",
+        type=int,
+        default=30,
+        help="Heartbeat interval in seconds (default: 30)"
+    )
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -128,6 +157,8 @@ Examples:
         cmd_doctor(args)
     elif args.command == "serve":
         cmd_serve(args)
+    elif args.command == "agent":
+        cmd_agent(args)
     else:
         parser.print_help()
 
@@ -301,6 +332,134 @@ def cmd_serve(args):
         port=args.port,
         open_browser=open_browser
     )
+
+
+def cmd_agent(args):
+    """Run local agent to send data to remote server."""
+    import uuid
+    import time
+    import requests
+    import threading
+    
+    # Generate agent ID if not provided
+    agent_id = args.agent_id or str(uuid.uuid4())[:8]
+    
+    # Initialize SES if not already done
+    initialize(project_id=args.project_id)
+    
+    print("=" * 50)
+    print("SES Intelligence - Remote Agent")
+    print("=" * 50)
+    print(f"🔗 Server: {args.server}")
+    print(f"📦 Project: {args.project_id}")
+    print(f"🆔 Agent ID: {agent_id}")
+    print(f"📝 Agent Name: {args.agent_name}")
+    print(f"⏱️  Heartbeat: every {args.interval} seconds")
+    print("=" * 50)
+    print("Press Ctrl+C to stop the agent\n")
+    
+    # Register with the remote server
+    register_url = f"{args.server}/api/v1/agent/register/"
+    try:
+        response = requests.post(
+            register_url,
+            json={
+                "agent_id": agent_id,
+                "agent_name": args.agent_name,
+                "project_id": args.project_id
+            },
+            timeout=10
+        )
+        if response.status_code == 200:
+            print(f"✅ Registered with remote server")
+        else:
+            print(f"⚠️  Registration failed: {response.status_code}")
+            print(f"   {response.text}")
+    except Exception as e:
+        print(f"❌ Failed to connect to server: {e}")
+        return
+    
+    # Stop event for graceful shutdown
+    stop_event = threading.Event()
+    
+    def send_heartbeat():
+        """Send heartbeat to remote server."""
+        heartbeat_url = f"{args.server}/api/v1/agent/heartbeat/"
+        
+        while not stop_event.is_set():
+            try:
+                # Get current health data
+                snapshots = get_runtime_snapshots(project_id=args.project_id)
+                edge_features = []
+                
+                # Get health data
+                health_engine = ArchitectureHealthEngine(
+                    snapshots=snapshots,
+                    edge_features=edge_features,
+                    project_id=args.project_id,
+                )
+                
+                try:
+                    health_data = health_engine.compute()
+                except Exception as e:
+                    health_data = {"error": str(e)}
+                
+                # Prepare payload
+                payload = {
+                    "agent_id": agent_id,
+                    "health_data": health_data,
+                    "snapshots": [
+                        {
+                            "snapshot_id": s.snapshot_id,
+                            "node_count": s.graph.number_of_nodes(),
+                            "edge_count": s.graph.number_of_edges()
+                        }
+                        for s in snapshots
+                    ] if snapshots else [],
+                    "graph_data": {
+                        "node_count": snapshots[-1].graph.number_of_nodes() if snapshots else 0,
+                        "edge_count": snapshots[-1].graph.number_of_edges() if snapshots else 0
+                    }
+                }
+                
+                # Send heartbeat
+                response = requests.post(
+                    heartbeat_url,
+                    json=payload,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    print(f"💓 Heartbeat sent - Health: {health_data.get('overall_score', 'N/A')}")
+                else:
+                    print(f"⚠️  Heartbeat failed: {response.status_code}")
+                    
+            except Exception as e:
+                print(f"❌ Error sending heartbeat: {e}")
+            
+            # Wait for next interval
+            stop_event.wait(args.interval)
+        
+        # Unregister when stopping
+        try:
+            unregister_url = f"{args.server}/api/v1/agent/unregister/"
+            requests.post(unregister_url, json={"agent_id": agent_id}, timeout=5)
+            print("👋 Unregistered from server")
+        except:
+            pass
+    
+    # Start heartbeat thread
+    heartbeat_thread = threading.Thread(target=send_heartbeat, daemon=True)
+    heartbeat_thread.start()
+    
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n🛑 Stopping agent...")
+        stop_event.set()
+        heartbeat_thread.join(timeout=5)
+        print("✅ Agent stopped")
 
 
 if __name__ == "__main__":

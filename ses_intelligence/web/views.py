@@ -614,6 +614,232 @@ def api_config(request):
     })
 
 
+# In-memory agent registry (for production, use database)
+_agent_registry = {}
+
+
+def api_agent_register(request):
+    """
+    Register a remote agent (local machine) with the centralized server.
+    
+    POST /api/v1/agent/register/
+    Body: {
+        "agent_id": "unique-agent-id",
+        "agent_name": "My Local Machine",
+        "project_id": "project-to-monitor"
+    }
+    
+    Returns: {"agent_id": "...", "status": "registered"}
+    """
+    if request.method != 'POST':
+        return api_error_response(
+            message="Method not allowed. Use POST to register an agent.",
+            status_code=405,
+            error_code="METHOD_NOT_ALLOWED"
+        )
+    
+    try:
+        body = json.loads(request.body) if request.body else {}
+        agent_id = body.get('agent_id', '')
+        agent_name = body.get('agent_name', 'Unnamed Agent')
+        project_id = body.get('project_id', 'default')
+    except json.JSONDecodeError:
+        return api_error_response(
+            message="Invalid JSON in request body",
+            status_code=400,
+            error_code="INVALID_JSON"
+        )
+    
+    if not agent_id:
+        return api_error_response(
+            message="agent_id is required",
+            status_code=400,
+            error_code="MISSING_AGENT_ID"
+        )
+    
+    try:
+        project_id = validate_project_id(project_id)
+    except APIError as e:
+        return api_error_response(e.message, e.status_code, e.error_code)
+    
+    # Register the agent
+    _agent_registry[agent_id] = {
+        'agent_id': agent_id,
+        'agent_name': agent_name,
+        'project_id': project_id,
+        'registered_at': datetime.utcnow().isoformat(),
+        'last_heartbeat': datetime.utcnow().isoformat(),
+        'status': 'online'
+    }
+    
+    logger.info(f"Registered agent: {agent_id} for project: {project_id}")
+    
+    return JsonResponse({
+        "timestamp": datetime.utcnow().isoformat(),
+        "agent_id": agent_id,
+        "project_id": project_id,
+        "status": "registered",
+        "message": f"Agent '{agent_name}' registered successfully"
+    })
+
+
+def api_agent_heartbeat(request):
+    """
+    Receive health data from a remote agent.
+    
+    POST /api/v1/agent/heartbeat/
+    Body: {
+        "agent_id": "unique-agent-id",
+        "health_data": {...},
+        "snapshots": [...],
+        "graph_data": {...}
+    }
+    
+    Returns: {"status": "success"}
+    """
+    if request.method != 'POST':
+        return api_error_response(
+            message="Method not allowed. Use POST to send heartbeat.",
+            status_code=405,
+            error_code="METHOD_NOT_ALLOWED"
+        )
+    
+    try:
+        body = json.loads(request.body) if request.body else {}
+        agent_id = body.get('agent_id', '')
+        health_data = body.get('health_data', {})
+        snapshots_data = body.get('snapshots', [])
+        graph_data = body.get('graph_data', {})
+    except json.JSONDecodeError:
+        return api_error_response(
+            message="Invalid JSON in request body",
+            status_code=400,
+            error_code="INVALID_JSON"
+        )
+    
+    if agent_id not in _agent_registry:
+        return api_error_response(
+            message=f"Agent '{agent_id}' not registered. Call /agent/register/ first.",
+            status_code=404,
+            error_code="AGENT_NOT_FOUND"
+        )
+    
+    agent = _agent_registry[agent_id]
+    project_id = agent['project_id']
+    
+    # Store the health data for this agent
+    storage = get_project_storage(project_id)
+    
+    try:
+        # Save health data
+        health_path = storage.health_dir / f"agent_{agent_id}_health.json"
+        with open(health_path, 'w') as f:
+            json.dump({
+                'timestamp': datetime.utcnow().isoformat(),
+                'agent_id': agent_id,
+                'health_data': health_data,
+                'snapshots': snapshots_data,
+                'graph_data': graph_data
+            }, f, indent=2)
+        
+        # Update agent status
+        agent['last_heartbeat'] = datetime.utcnow().isoformat()
+        agent['status'] = 'online'
+        
+        # Save to agent-specific history
+        agent_history_path = storage.health_dir / f"agent_{agent_id}_history.json"
+        history = []
+        if agent_history_path.exists():
+            with open(agent_history_path, 'r') as f:
+                history = json.load(f)
+        
+        history.append({
+            'timestamp': datetime.utcnow().isoformat(),
+            'health_data': health_data
+        })
+        
+        # Keep only last 100 entries
+        history = history[-100:]
+        
+        with open(agent_history_path, 'w') as f:
+            json.dump(history, f)
+        
+        logger.info(f"Heartbeat received from agent: {agent_id}")
+        
+        return JsonResponse({
+            "timestamp": datetime.utcnow().isoformat(),
+            "agent_id": agent_id,
+            "status": "success",
+            "message": "Health data received"
+        })
+        
+    except Exception as e:
+        logger.exception(f"Failed to store agent data: {agent_id}")
+        return api_error_response(
+            message=f"Failed to store agent data: {str(e)}",
+            status_code=500,
+            error_code="STORE_ERROR"
+        )
+
+
+def api_agent_list(request):
+    """List all registered agents."""
+    project_id = get_project_id_from_request(request)
+    
+    agents = []
+    for agent_id, agent in _agent_registry.items():
+        if agent.get('project_id') == project_id:
+            agents.append({
+                'agent_id': agent_id,
+                'agent_name': agent.get('agent_name'),
+                'registered_at': agent.get('registered_at'),
+                'last_heartbeat': agent.get('last_heartbeat'),
+                'status': agent.get('status')
+            })
+    
+    return JsonResponse({
+        "timestamp": datetime.utcnow().isoformat(),
+        "project_id": project_id,
+        "agents": agents,
+        "count": len(agents)
+    })
+
+
+def api_agent_unregister(request):
+    """Unregister an agent."""
+    if request.method != 'POST':
+        return api_error_response(
+            message="Method not allowed. Use POST to unregister.",
+            status_code=405,
+            error_code="METHOD_NOT_ALLOWED"
+        )
+    
+    try:
+        body = json.loads(request.body) if request.body else {}
+        agent_id = body.get('agent_id', '')
+    except json.JSONDecodeError:
+        return api_error_response(
+            message="Invalid JSON in request body",
+            status_code=400,
+            error_code="INVALID_JSON"
+        )
+    
+    if agent_id in _agent_registry:
+        del _agent_registry[agent_id]
+        logger.info(f"Unregistered agent: {agent_id}")
+        return JsonResponse({
+            "timestamp": datetime.utcnow().isoformat(),
+            "agent_id": agent_id,
+            "status": "unregistered"
+        })
+    
+    return api_error_response(
+        message=f"Agent '{agent_id}' not found",
+        status_code=404,
+        error_code="AGENT_NOT_FOUND"
+    )
+
+
 def serve_index(request):
     """Serve the React SPA index.html for all non-API routes."""
     from django.http import HttpResponse

@@ -41,6 +41,7 @@ dependencies = [
     "django>=4.0",
     "djangorestframework>=3.14.0",
     "whitenoise>=6.0",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]

@@ -27,6 +27,12 @@ urlpatterns = [
     # UI Config endpoint
     path("api/v1/config/", views.api_config, name="api_config"),
     
+    # Remote Agent endpoints
+    path("api/v1/agent/register/", views.api_agent_register, name="api_agent_register"),
+    path("api/v1/agent/heartbeat/", views.api_agent_heartbeat, name="api_agent_heartbeat"),
+    path("api/v1/agent/list/", views.api_agent_list, name="api_agent_list"),
+    path("api/v1/agent/unregister/", views.api_agent_unregister, name="api_agent_unregister"),
+    
     # Legacy endpoints (without v1 prefix)
     path("api/projects/", views.api_projects_list, name="api_projects_list_legacy"),
     path("api/health/", views.api_health, name="api_health_legacy"),
