@@ -1052,6 +1052,155 @@
       .health-score-card:hover .flying-vars {
         opacity: 1;
       }
+
+      /* ============================================
+           AI Chat Section
+           ============================================ */
+
+      .ai-chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 300px;
+        margin-top: 16px;
+      }
+
+      .ai-chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        margin-bottom: 12px;
+      }
+
+      .ai-message {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .ai-avatar {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #a855f7, #7c3aed);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .ai-message-content {
+        background: var(--bg-card);
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        border-top-left-radius: 4px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+      }
+
+      .ai-message-content p {
+        margin: 0;
+      }
+
+      .ai-user-message {
+        flex-direction: row-reverse;
+      }
+
+      .ai-user-message .ai-message-content {
+        background: var(--accent-muted);
+        border-top-left-radius: var(--radius-md);
+        border-top-right-radius: 4px;
+        color: var(--text-primary);
+      }
+
+      .ai-chat-input-container {
+        display: flex;
+        gap: 8px;
+      }
+
+      .ai-chat-input {
+        flex: 1;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: inherit;
+        transition: border-color var(--transition-fast);
+      }
+
+      .ai-chat-input:focus {
+        outline: none;
+        border-color: #a855f7;
+      }
+
+      .ai-chat-input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .ai-chat-send {
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #a855f7, #7c3aed);
+        border: none;
+        border-radius: var(--radius-md);
+        color: white;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ai-chat-send:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+      }
+
+      .ai-chat-send:active {
+        transform: scale(0.98);
+      }
+
+      .ai-typing {
+        display: flex;
+        gap: 4px;
+        padding: 8px 12px;
+      }
+
+      .ai-typing span {
+        width: 6px;
+        height: 6px;
+        background: var(--text-tertiary);
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+      }
+
+      .ai-typing span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+
+      .ai-typing span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes typing {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.4;
+        }
+        30% {
+          transform: translateY(-4px);
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1795,6 +1944,36 @@
             </div>
           </div>
 
+          <!-- AI Chat Section -->
+          <div class="card endpoints-card">
+            <div class="card-header">
+              <span class="card-title">AI Assistant</span>
+              <div class="card-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+            </div>
+            <div class="ai-chat-container" id="aiChatContainer">
+              <div class="ai-chat-messages" id="aiChatMessages">
+                <div class="ai-message">
+                  <div class="ai-avatar">🤖</div>
+                  <div class="ai-message-content">
+                    <p>Hello! I'm your SES Intelligence assistant. Ask me anything about your architecture health, forecast, or behavior analysis.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="ai-chat-input-container">
+                <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Ask about your system health..." />
+                <button class="ai-chat-send" onclick="sendAIChat()">
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- API Endpoints -->
           <div class="card endpoints-card">
             <div class="card-header">
@@ -2310,6 +2489,128 @@
             closeCreateProjectModal();
           }
         });
+
+      // AI Chat functions
+      function sendAIChat() {
+        const input = document.getElementById("aiChatInput");
+        const messagesContainer = document.getElementById("aiChatMessages");
+
+        if (!input || !messagesContainer) return;
+
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Add user message
+        const userMessage = document.createElement("div");
+        userMessage.className = "ai-message ai-user-message";
+        userMessage.innerHTML = `
+          <div class="ai-avatar">👤</div>
+          <div class="ai-message-content">
+            <p>${escapeHtml(message)}</p>
+          </div>
+        `;
+        messagesContainer.appendChild(userMessage);
+
+        // Clear input
+        input.value = "";
+
+        // Show typing indicator
+        const typingIndicator = document.createElement("div");
+        typingIndicator.className = "ai-message";
+        typingIndicator.id = "aiTypingIndicator";
+        typingIndicator.innerHTML = `
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-message-content">
+            <div class="ai-typing">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        `;
+        messagesContainer.appendChild(typingIndicator);
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Simulate AI response (in production, this would call an API)
+        setTimeout(() => {
+          // Remove typing indicator
+          const typing = document.getElementById("aiTypingIndicator");
+          if (typing) typing.remove();
+
+          // Generate response based on message content
+          const response = generateAIResponse(message);
+
+          const aiMessage = document.createElement("div");
+          aiMessage.className = "ai-message";
+          aiMessage.innerHTML = `
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-message-content">
+              <p>${response}</p>
+            </div>
+          `;
+          messagesContainer.appendChild(aiMessage);
+
+          // Scroll to bottom
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 1500);
+      }
+
+      function generateAIResponse(message) {
+        const lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.includes("health") || lowerMessage.includes("score")) {
+          return "Your current health score is displayed in the main gauge above. A score of 80+ indicates excellent health, 60-79 is good, 40-59 is warning, and below 40 is critical.";
+        } else if (
+          lowerMessage.includes("stability") ||
+          lowerMessage.includes("stable")
+        ) {
+          return "The stability index measures how consistent your system's behavior is over time. Higher values (closer to 1.0) indicate more stable behavior.";
+        } else if (
+          lowerMessage.includes("forecast") ||
+          lowerMessage.includes("predict")
+        ) {
+          return "The forecast shows predicted health scores based on historical data. The purple dots represent future predictions, while blue dots show historical values.";
+        } else if (
+          lowerMessage.includes("risk") ||
+          lowerMessage.includes("anomaly")
+        ) {
+          return "Active risks are shown in the 'Active Risks' card. Anomalies indicate behavior that deviates significantly from the expected pattern.";
+        } else if (
+          lowerMessage.includes("trend") ||
+          lowerMessage.includes("direction")
+        ) {
+          return "The trend direction shows whether your system's health is improving (↑), declining (↓), or remaining flat (→) over time.";
+        } else if (
+          lowerMessage.includes("confidence") ||
+          lowerMessage.includes("accurate")
+        ) {
+          return "Confidence score indicates how reliable the forecast is. Higher confidence means the prediction is more likely to be accurate.";
+        } else if (
+          lowerMessage.includes("volatility") ||
+          lowerMessage.includes("variable")
+        ) {
+          return "Volatility measures how much your system's behavior fluctuates. Low volatility is generally better as it indicates predictable behavior.";
+        } else if (lowerMessage.includes("help")) {
+          return "You can ask me about: health scores, stability, forecasts, risks, trends, volatility, or confidence. What would you like to know?";
+        } else {
+          return "I can help you understand your system's health, forecasts, and behavior. Try asking about 'health', 'stability', 'forecast', 'risks', 'trends', or 'volatility'.";
+        }
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Handle Enter key in chat input
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.id === "aiChatInput") {
+          sendAIChat();
+        }
+      });
     </script>
   </body>
 </html>
