@@ -2533,28 +2533,62 @@
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Simulate AI response (in production, this would call an API)
-        setTimeout(() => {
-          // Remove typing indicator
-          const typing = document.getElementById("aiTypingIndicator");
-          if (typing) typing.remove();
+        // Call the backend API with OpenAI
+        fetch(`${API_BASE}/api/v1/chat/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: message,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Remove typing indicator
+            const typing = document.getElementById("aiTypingIndicator");
+            if (typing) typing.remove();
 
-          // Generate response based on message content
-          const response = generateAIResponse(message);
+            // Get response from API or fallback to local
+            const response =
+              data.response ||
+              data.error?.message ||
+              generateAIResponse(message);
 
-          const aiMessage = document.createElement("div");
-          aiMessage.className = "ai-message";
-          aiMessage.innerHTML = `
+            const aiMessage = document.createElement("div");
+            aiMessage.className = "ai-message";
+            aiMessage.innerHTML = `
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-message-content">
+              <p>${escapeHtml(response)}</p>
+            </div>
+          `;
+            messagesContainer.appendChild(aiMessage);
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          })
+          .catch((error) => {
+            // Remove typing indicator
+            const typing = document.getElementById("aiTypingIndicator");
+            if (typing) typing.remove();
+
+            // Fallback to local response on error
+            const response = generateAIResponse(message);
+
+            const aiMessage = document.createElement("div");
+            aiMessage.className = "ai-message";
+            aiMessage.innerHTML = `
             <div class="ai-avatar">🤖</div>
             <div class="ai-message-content">
               <p>${response}</p>
             </div>
           `;
-          messagesContainer.appendChild(aiMessage);
+            messagesContainer.appendChild(aiMessage);
 
-          // Scroll to bottom
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 1500);
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          });
       }
 
       function generateAIResponse(message) {
