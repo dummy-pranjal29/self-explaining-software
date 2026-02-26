@@ -981,16 +981,14 @@ mypy ses_intelligence/
 
 ## Changelog
 
-### [1.0.0b0] - Current Version
+### [1.0.0b3] - Current Version
 
 #### Added
 
-- LLM Conversational Layer (`/api/v1/chat/`) for interactive Q&A
-- Configuration Abstraction Layer for framework-agnostic initialization
-- New database models: Snapshot, HealthRecord, ForecastRecord
-- Automated test infrastructure (pytest + vitest)
-- Frontend component tests with API mocking
-- Full-stack platform: SDK + API + Dashboard
+- **AI Assistant Chat Section** in the embedded dashboard - interact with your architecture using natural language
+- **OpenAI API Integration** - configure your API key for LLM-powered responses
+- **Embedded Web Server** - run `ses_intelligence.web.server.run_server()` directly without Django project setup
+- **Environment File Loading** - server automatically loads `.env` file for API keys and configuration
 
 #### Changed
 
@@ -1000,6 +998,17 @@ mypy ses_intelligence/
 #### Fixed
 
 - Fixed project ID validation in API endpoints
+
+### [1.0.0b0] - Previous Version
+
+#### Added
+
+- LLM Conversational Layer (`/api/v1/chat/`) for interactive Q&A
+- Configuration Abstraction Layer for framework-agnostic initialization
+- New database models: Snapshot, HealthRecord, ForecastRecord
+- Automated test infrastructure (pytest + vitest)
+- Frontend component tests with API mocking
+- Full-stack platform: SDK + API + Dashboard
 
 ---
 
