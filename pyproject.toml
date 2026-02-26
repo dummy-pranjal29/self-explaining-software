@@ -80,6 +80,7 @@ Issues = "https://github.com/dummy-pranjal29/self-explaining-software/issues"
 # Console scripts
 [project.scripts]
 ses = "ses_intelligence.cli:main"
+ses-intelligence = "ses_intelligence.web.server:run_server"
 
 [tool.setuptools]
 packages = ["ses_intelligence", "ses_intelligence.architecture_health", "ses_intelligence.behavior_change", "ses_intelligence.llm", "ses_intelligence.ml", "ses_intelligence.narrative", "ses_intelligence.web"]

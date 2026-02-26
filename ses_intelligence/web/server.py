@@ -58,8 +58,15 @@ def run_server(host: str = "0.0.0.0", port: int = 8000, open_browser: bool = Tru
     # Setup Django
     django.setup()
     
-    logger.info(f"Starting SES Intelligence Dashboard on http://{host}:{port}")
-    logger.info("Press Ctrl+C to stop the server")
+    # Print startup banner
+    print("\n" + "=" * 60)
+    print("  🚀 SES Intelligence Dashboard")
+    print("=" * 60)
+    print(f"\n  🌐 Open your browser and visit:")
+    print(f"     http://localhost:{port}")
+    print(f"\n  📦 Project ID: default")
+    print(f"\n  Press Ctrl+C to stop the server\n")
+    print("=" * 60 + "\n")
     
     # Open browser if requested
     if open_browser:
@@ -68,7 +75,7 @@ def run_server(host: str = "0.0.0.0", port: int = 8000, open_browser: bool = Tru
         
         def open_browserDelayed():
             import time
-            time.sleep(1.5)  # Wait for server to start
+            time.sleep(2)  # Wait for server to start
             webbrowser.open(f"http://localhost:{port}")
         
         browser_thread = threading.Thread(target=open_browserDelayed)

@@ -81,6 +81,27 @@ pip install ses-intelligence[django]    # Django integration
 pip install ses-intelligence[all]
 ```
 
+### Quick Start - Run Dashboard
+
+After installing, start the dashboard with one command:
+
+```bash
+# Option 1: Using the CLI (recommended)
+ses serve
+
+# Option 2: Using Python directly
+python -c "from ses_intelligence.web.server import run_server; run_server()"
+
+# Option 3: Using the package entry point
+ses-intelligence
+```
+
+This will:
+
+1. Start the web server
+2. Open your browser automatically to http://localhost:8000
+3. Display the SES Intelligence Dashboard
+
 ### Install from Source
 
 ```bash
