@@ -608,6 +608,41 @@ DATABASES = {
 
 ---
 
+## Testing the Application
+
+### Quick Test in 5 Minutes
+
+For a complete standalone test of v1.0.0b4, use the included test suite:
+
+```bash
+# 1. Create a test directory
+mkdir C:\Users\Asus\ses_test
+cd C:\Users\Asus\ses_test
+
+# 2. Create virtual environment
+python -m venv test_env
+test_env\Scripts\activate
+
+# 3. Install from PyPI
+pip install ses-intelligence[all]
+
+# 4. Copy test_app.py and run
+python test_app.py
+```
+
+**What gets tested:**
+- ✅ SDK initialization
+- ✅ Function tracing and snapshots
+- ✅ Architecture health scoring
+- ✅ Forecasting with confidence
+- ✅ CLI commands (ses, ses-agent-status, ses-intelligence)
+- ✅ Web server and dashboard
+- ✅ OpenAI chat integration
+
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for detailed scenarios including Flask/FastAPI integration, agent registration, and dashboard testing.
+
+---
+
 ## CLI Commands
 
 The SDK includes a CLI tool for quick operations:
@@ -1002,7 +1037,26 @@ mypy ses_intelligence/
 
 ## Changelog
 
-### [1.0.0b3] - Current Version
+### [1.0.0b4] - Current Version
+
+#### Added
+
+- **Remote Agent Support** - Register and monitor remote agents with automatic heartbeat tracking
+- **Agent Status CLI Tool** - `ses-agent-status` command to check agent registration and status
+- **Dashboard Agent Status Widget** - Real-time agent monitoring in the embedded dashboard
+- **Agent API Endpoints** - `/api/v1/agents/register/` and `/api/v1/agents/heartbeat/` for agent lifecycle management
+
+#### Changed
+
+- Improved package discovery configuration in pyproject.toml
+- Enhanced CLI entry points for better user experience
+
+#### Fixed
+
+- Fixed package discovery to exclude non-package directories
+- Resolved build backend subprocess errors
+
+### [1.0.0b3] - Previous Version
 
 #### Added
 
@@ -1020,7 +1074,7 @@ mypy ses_intelligence/
 
 - Fixed project ID validation in API endpoints
 
-### [1.0.0b0] - Previous Version
+### [1.0.0b0] - Base Version
 
 #### Added
 

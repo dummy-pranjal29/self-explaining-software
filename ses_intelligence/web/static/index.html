@@ -1502,7 +1502,7 @@
           // For other views, show placeholder
           grid.innerHTML = `
             <div class="card" style="grid-column: span 12;">
-              <div class="text-center" style="padding: 40px;">
+              <div class="text-center" style="padding: 40px">
                 <h3 style="margin-bottom: 8px;">${currentView.charAt(0).toUpperCase() + currentView.slice(1)} View</h3>
                 <p style="color: var(--text-tertiary);">This view is coming soon...</p>
               </div>
@@ -1779,7 +1779,8 @@
           });
 
           // Draw SVG
-          let svgContent = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%;">`;
+          let svgContent = `<svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: 100%;">
+`;
 
           // Draw edges
           edges.forEach((edge) => {
@@ -1898,7 +1899,7 @@
               <span class="flying-var" style="top: 12%; left: 10%; --tx: 20px; --ty: -15px; animation-delay: 0.3s;">rmse</span>
               <span class="flying-var" style="top: 22%; right: 5%; --tx: -30px; --ty: 20px; animation-delay: 0.8s;">residual_var</span>
               <span class="flying-var" style="bottom: 28%; left: 8%; --tx: 25px; --ty: 25px; animation-delay: 1.3s;">mean_health</span>
-              <span class="flying-var" style="bottom: 8%; right: 12%; --tx: -20px; --ty: -20px; animation-delay: 1.8s;">window_size</span>
+              <span class="flying-var" style="bottom: 8%; right: 12%; --tx: -30px; --ty: -20px; animation-delay: 1.8s;">window_size</span>
             </div>
             <div class="card-header">
               <span class="card-title">Confidence</span>
@@ -1913,6 +1914,23 @@
             <div class="metric-trend neutral" id="confidenceTrend">
               <span>No data</span>
             </div>
+          </div>
+
+          <!-- Agent Status Widget -->
+          <div class="card fade-in stagger-3" id="agentStatusCard" style="grid-column: span 6; margin-top: 24px;">
+            <div class="card-header">
+              <span class="card-title">Agent Status</span>
+              <div class="card-icon" style="background: rgba(34,197,94,0.15); color: #22c55e">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <circle cx="12" cy="12" r="6" fill="#22c55e"/>
+                </svg>
+              </div>
+            </div>
+            <div id="agentStatusContent" style="padding: 12px 0; font-size: 15px;">
+              Loading agent status...
+            </div>
+            <button class="btn btn-secondary" style="margin-top: 8px;" onclick="refreshAgentStatus()">Refresh</button>
           </div>
 
           <!-- Volatility -->
@@ -2535,6 +2553,9 @@
         // Render dashboard
         renderDashboard();
 
+        // Fetch agent status on dashboard load
+        setTimeout(fetchAgentStatus, 500);
+
         // Auto-refresh every 30 seconds
         setInterval(refreshData, 30000);
       });
@@ -2598,6 +2619,41 @@
           closeAgentModal();
         }
       });
+
+      // Agent Status functions
+      function fetchAgentStatus() {
+        const content = document.getElementById("agentStatusContent");
+        if (!content) return;
+        content.textContent = "Loading agent status...";
+        const url = `/api/v1/agent/list/?project_id=${encodeURIComponent(currentProject)}`;
+        fetch(url)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var agents = data.agents || [];
+            if (!agents.length) {
+              content.textContent = "No agents registered or online.";
+            } else {
+              var html = "";
+              for (var i = 0; i < agents.length; i++) {
+                var agent = agents[i];
+                html += "<div style='margin-bottom:10px;'>";
+                html += "<strong>Agent ID:</strong> " + agent.agent_id + "<br>";
+                html += "<strong>Name:</strong> " + agent.agent_name + "<br>";
+                html += "<strong>Status:</strong> <span style='color:" + (agent.status==="online"?"#22c55e":"#f59e42") + "'>" + agent.status + "</span><br>";
+                html += "<strong>Last Heartbeat:</strong> " + agent.last_heartbeat + "<br>";
+                html += "</div>";
+              }
+              content.innerHTML = html;
+            }
+          })
+          .catch(function(e) {
+            content.textContent = "Error loading agent status.";
+          });
+      }
+
+      function refreshAgentStatus() {
+        fetchAgentStatus();
+      }
 
       // AI Chat functions
       function sendAIChat() {

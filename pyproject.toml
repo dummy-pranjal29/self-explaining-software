@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ses-intelligence"
-version = "1.0.0b3"
+version = "1.0.0rc1"
 description = "Runtime intelligence platform that monitors, analyzes, and explains software behavior changes in real-time"
 readme = "README.md"
 license = {text = "MIT"}
@@ -82,9 +82,12 @@ Issues = "https://github.com/dummy-pranjal29/self-explaining-software/issues"
 [project.scripts]
 ses = "ses_intelligence.cli:main"
 ses-intelligence = "ses_intelligence.web.server:run_server"
+ses-agent-status = "ses_intelligence.tools.check_agent_status:main"
 
 [tool.setuptools]
-packages = ["ses_intelligence", "ses_intelligence.architecture_health", "ses_intelligence.behavior_change", "ses_intelligence.llm", "ses_intelligence.ml", "ses_intelligence.narrative", "ses_intelligence.web"]
+
+[tool.setuptools.packages.find]
+where = ["ses_intelligence"]
 
 [tool.setuptools.package-data]
 ses_intelligence = ["py.typed", "web/static/**/*"]
