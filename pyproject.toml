@@ -87,12 +87,14 @@ ses-intelligence = "ses_intelligence.web.server:run_server"
 ses-agent-status = "ses_intelligence.tools.check_agent_status:main"
 
 [tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
-where = ["ses_intelligence"]
+where = ["."]
+include = ["ses_intelligence*"]
 
 [tool.setuptools.package-data]
-ses_intelligence = ["py.typed", "web/static/**/*"]
+ses_intelligence = ["py.typed", "web/static/**/*", "web/static/*"]
 
 [tool.black]
 line-length = 88
