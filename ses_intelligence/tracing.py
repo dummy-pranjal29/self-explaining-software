@@ -66,9 +66,10 @@ def trace_behavior(func: Callable) -> Callable:
                     )
                 
                 print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
-                
-                # Increment call count and auto-persist if needed
-                _increment_call_count(project_id)
+            
+            # Increment call count for ALL traced functions
+            # (ensures snapshot persistence even for flat tracing)
+            _increment_call_count(project_id)
 
             return result
         finally:
@@ -105,9 +106,10 @@ def trace_behavior(func: Callable) -> Callable:
                     )
                 
                 print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
-                
-                # Increment call count and auto-persist if needed
-                _increment_call_count(project_id)
+            
+            # Increment call count for ALL traced functions
+            # (ensures snapshot persistence even for flat tracing)
+            _increment_call_count(project_id)
 
             return result
         finally:
