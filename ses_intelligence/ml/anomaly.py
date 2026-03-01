@@ -1,7 +1,19 @@
 # ses_intelligence/ml/anomaly.py
 
 import numpy as np
-from sklearn.ensemble import IsolationForest
+
+import logging
+try:
+    from sklearn.ensemble import IsolationForest
+    import sklearn
+    if tuple(map(int, sklearn.__version__.split('.')[:2])) < (1, 0):
+        logging.warning(f"scikit-learn version {sklearn.__version__} may be incompatible.")
+except ImportError as e:
+    logging.error(f"scikit-learn ImportError: {e}")
+    raise
+except Exception as e:
+    logging.error(f"Unexpected error importing scikit-learn: {e}")
+    raise
 
 
 class AnomalyDetector:

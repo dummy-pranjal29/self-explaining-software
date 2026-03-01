@@ -10,14 +10,23 @@ _LinearRegression = None
 
 def _check_sklearn():
     """Lazy check for sklearn availability."""
+    import logging
     global _sklearn_available, _LinearRegression
     if _sklearn_available is None:
         try:
             from sklearn.linear_model import LinearRegression
+            import sklearn
+            # Optional: check version
+            if tuple(map(int, sklearn.__version__.split('.')[:2])) < (1, 0):
+                logging.warning(f"scikit-learn version {sklearn.__version__} may be incompatible.")
             _LinearRegression = LinearRegression
             _sklearn_available = True
-        except ImportError:
+        except ImportError as e:
+            logging.error(f"scikit-learn ImportError: {e}")
             _sklearn_available = False
+        except Exception as e:
+            logging.error(f"Unexpected error importing scikit-learn: {e}")
+            raise
     return _sklearn_available
 
 

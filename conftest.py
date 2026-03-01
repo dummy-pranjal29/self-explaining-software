@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Now import Django and configure
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ses_core.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ses_intelligence.web.settings')
 
 import django
 django.setup()

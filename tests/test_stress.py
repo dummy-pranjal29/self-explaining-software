@@ -22,7 +22,7 @@ import os
 # Add the project root to the path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ses_core.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ses_intelligence.web.settings')
 
 import django
 django.setup()
