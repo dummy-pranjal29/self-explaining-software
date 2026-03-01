@@ -1037,6 +1037,27 @@ mypy ses_intelligence/
 
 ## Changelog
 
+### [1.1.0rc1] - Thread-Safe Architecture
+
+#### Added
+
+- **Global Project Registry** - Centralized runtime graph management enabling cross-thread visibility
+- **Per-Project Thread-Safe Locks** - Mutex protection for all graph mutations preventing race conditions
+- **Auto-Persistence Snapshots** - Automatic snapshot persistence every 10 traced calls
+- **Multi-Threading Integration Tests** - Comprehensive validation with 5 concurrent threads passing all checks
+
+#### Changed
+
+- Refactored runtime state management from thread-local storage to global registry pattern
+- Updated tracing decorators to acquire locks before all graph mutations
+- Improved snapshot persistence to work with both nested and flat tracing patterns
+
+#### Fixed
+
+- Fixed thread-local graph isolation preventing multi-threaded apps from seeing behavior data
+- Resolved dashboard snapshot visibility issues across different execution threads
+- Corrected call count increment to trigger persistence for all traced functions
+
 ### [1.0.0b4] - Current Version
 
 #### Added
