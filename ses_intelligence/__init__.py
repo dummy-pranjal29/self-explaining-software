@@ -21,7 +21,7 @@ Quick Start:
 For more details, see the documentation.
 """
 
-__version__ = "1.0.0rc2"
+__version__ = "1.1.0rc1"
 
 # Public API exports
 from .tracing import trace_behavior, get_edge_features

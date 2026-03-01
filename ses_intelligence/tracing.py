@@ -9,6 +9,9 @@ from ses_intelligence.runtime_state import (
     push_call,
     pop_call,
     get_current_caller,
+    _get_project_id,
+    _get_project_lock,
+    _increment_call_count,
 )
 
 
@@ -17,6 +20,11 @@ def trace_behavior(func: Callable) -> Callable:
     Decorator to trace function behavior and build architecture graph.
     
     Supports both synchronous and asynchronous functions.
+    
+    THREAD-SAFETY:
+    - Graph mutations are protected by per-project locks
+    - Multiple threads can trace functions concurrently for the same project
+    - No race conditions or data corruption
     
     Args:
         func: The function to trace
@@ -29,13 +37,18 @@ def trace_behavior(func: Callable) -> Callable:
     
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
+        # Get project_id and initialize if needed
+        project_id = _get_project_id()
+        
         # Get parent BEFORE pushing current function
         caller = get_current_caller()
         callee = func.__name__
 
-        graph = get_behavior_graph()
+        # Get graph and lock
+        graph = get_behavior_graph(project_id)
+        lock = _get_project_lock(project_id)
 
-        # Push current function onto stack
+        # Push current function onto thread-local stack
         push_call(callee)
 
         try:
@@ -43,15 +56,19 @@ def trace_behavior(func: Callable) -> Callable:
             result = await func(*args, **kwargs)
             duration = time.time() - start
 
-            # Record edge if parent exists
+            # Record edge if parent exists - THREAD-SAFE with lock
             if caller:
-                graph.add_call(
-                    caller=caller,
-                    callee=callee,
-                    duration=duration
-                )
-
-            print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+                with lock:
+                    graph.add_call(
+                        caller=caller,
+                        callee=callee,
+                        duration=duration
+                    )
+                
+                print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+                
+                # Increment call count and auto-persist if needed
+                _increment_call_count(project_id)
 
             return result
         finally:
@@ -59,13 +76,18 @@ def trace_behavior(func: Callable) -> Callable:
 
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
+        # Get project_id and initialize if needed
+        project_id = _get_project_id()
+        
         # Get parent BEFORE pushing current function
         caller = get_current_caller()
         callee = func.__name__
 
-        graph = get_behavior_graph()
+        # Get graph and lock
+        graph = get_behavior_graph(project_id)
+        lock = _get_project_lock(project_id)
 
-        # Push current function onto stack
+        # Push current function onto thread-local stack
         push_call(callee)
 
         try:
@@ -73,15 +95,19 @@ def trace_behavior(func: Callable) -> Callable:
             result = func(*args, **kwargs)
             duration = time.time() - start
 
-            # Record edge if parent exists
+            # Record edge if parent exists - THREAD-SAFE with lock
             if caller:
-                graph.add_call(
-                    caller=caller,
-                    callee=callee,
-                    duration=duration
-                )
-
-            print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+                with lock:
+                    graph.add_call(
+                        caller=caller,
+                        callee=callee,
+                        duration=duration
+                    )
+                
+                print(f"[SES-FUNC] {caller} -> {callee} {duration:.4f}s")
+                
+                # Increment call count and auto-persist if needed
+                _increment_call_count(project_id)
 
             return result
         finally:
